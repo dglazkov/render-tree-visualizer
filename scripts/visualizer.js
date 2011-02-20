@@ -1,21 +1,12 @@
-
-function layer()
-{
-    
-}
-
-layer.at = function(x, y)
-{
-    return chain;
-}
-
-
 function chain()
 {
     return chain;
 }
 
-chain.at = layer.at;
+chain.at = function(x, y)
+{
+    return chain;
+}
 
 chain.size = function(w, h)
 {
@@ -42,55 +33,21 @@ chain.property = function()
     return chain;
 }
 
-function RenderView()
-{
-}
-
-RenderView.at = layer.at;
-
-function RenderBlock()
-{
-    return chain;
-}
-
-function RenderBody()
-{
-    return chain;
-}
-
-function RenderText()
-{
-    return chain;
-}
-
-function RenderVideo()
-{
-    return chain;
-}
-
-function textRun()
-{
-    
-}
-
-function RenderFlexibleBox()
-{
-    return chain;
-}
-
-function RenderButton()
-{
-    return chain;
-}
-
-function RenderSlider()
-{
-    return chain;
-}
-
-
-textRun.at = layer.at;
-
 var anonymous;
 var positioned;
-var relative = { positioned: '' }
+var relative = { positioned: '' };
+
+[
+    'layer',
+    'RenderView',
+    'textRun',
+    'RenderBlock',
+    'RenderBody',
+    'RenderText',
+    'RenderVideo',
+    'RenderFlexibleBox',
+    'RenderButton',
+    'RenderSlider'
+].forEach(function(renderObject) {
+    window[renderObject] = chain;
+});
