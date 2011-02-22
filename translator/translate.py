@@ -1,140 +1,109 @@
 import re
+from string import Template
 
-class Context:
-    def __init__(self):
+class Translator:
+    def __init__(self, matchers):
         self.inside_quotes = False
         self.delimiter = None
+        self._matchers = matchers
 
-    def new_line(self):
+    def _new_line(self):
         self.delimiter = None
 
-    def new_token(self):
+    def _new_token(self):
         if self.delimiter == None:
             self.delimiter = ''
-        elif context.inside_quotes:
+        elif self.inside_quotes:
             self.delimiter = ' '
         else:
             self.delimiter = '.'
 
-class Matcher:
-    def __init__(self, context):
-        self.context = context
+    def _translate_statement(self, text):
+        result = []
+        for token in text.split():
+            self._new_token()
+            for matcher in self._matchers:
+                if matcher.translate(self, token, result):
+                    break
+        return ''.join(result)
 
-class ParenMatcher(Matcher):
-    def __init__(self, context):
-        Matcher.__init__(self, context)
+    def translate_file(self, f):
+        line_pattern = re.compile('^(\s*)(.+)$')
+        last_result = None
+        for line in f:
+            self._new_line()
+            (start, indentation, statement, end) = line_pattern.split(line)
+            if last_result:
+                print last_result.output(indentation)
+            last_result = TranslatedLine(indentation, self._translate_statement(statement))
+        if last_result:
+            print last_result.output('')
 
-    def matches(self, token):
+class ParenMatcher():
+    def translate(self, context, token, result):
         if token[0] == '(':
-            self.value = token
+            result.append(token)
             return True
         return False
 
-    def translate(self, result):
-        if self.value:
-            result.append(self.value)
-
-class DefaultMatcher(Matcher):
-    def __init__(self, context):
-        Matcher.__init__(self, context)
-
-    def matches(self, token):
-        self.value = token
+class DefaultMatcher():
+    def translate(self, context, token, result):
+        result.append(context.delimiter + token)
         return True
 
-    def translate(self, result):
-        if self.value:
-            result.append(self.context.delimiter + self.value)
-
-class QuoteStartMatcher(Matcher):
-    def __init__(self, context):
-        Matcher.__init__(self, context)
-
-    def matches(self, token):
+class QuoteStartMatcher():
+    def translate(self, context, token, result):
         if token[0] == '"':
-            self.value = token
+            result.append('.text(' + token)
+            if token[-1] == '"':
+                result.append(')')
+            else:
+                context.inside_quotes = True
             return True
         return False
 
-    def translate(self, result):
-        result.append('.text(' + self.value)
-        if self.value[-1] == '"':
-            result.append(')')
-        else:
-            self.context.inside_quotes = True
-
-class QuoteEndMatcher(Matcher):
-    def __init__(self, context):
-        Matcher.__init__(self, context)
-
-    def matches(self, token):
+class QuoteEndMatcher():
+    def translate(self, context, token, result):
         if token[-1] == '"':
-            self.value = token
+            result.append(' ' + token + ')')
+            context.inside_quotes = False
             return True
         return False
 
-    def translate(self, result):
-        result.append(' ' + self.value + ')')
-        self.context.inside_quotes = False
-
-class TextRunMatcher(Matcher):
-    def __init__(self, context):
-        Matcher.__init__(self, context)
-
-    def matches(self, token):
+class TextRunMatcher():
+    def translate(self, context, token, result):
         if token == 'run':
-            self.value = token
+            result.append('Run')
             return True
         return False
-    def translate(self, result):
-        result.append('Run')
 
-class RegexMatcher(Matcher):
-    def __init__(self, context):
-        Matcher.__init__(self, context)
-
-    def matches(self, token):
+class RegexMatcher():
+    def translate(self, context, token, result):
         match_object = self.pattern.match(token)
         if match_object:
-            self.values = match_object.groupdict()
+            result.append(self.template.substitute(match_object.groupdict()))
             return True
         return False
 
 class SizeMatcher(RegexMatcher):
-    def __init__(self, context):
-        RegexMatcher.__init__(self, context)
+    def __init__(self):
         self.pattern = re.compile('(?P<width>\d+)x(?P<height>\d+)')
-
-    def translate(self, result):
-        if self.values:
-            result.append('(' + self.values['width'] + ',' + self.values['height'] + ')')
+        self.template = Template('($width,$height)')
 
 class TextWidthMatcher(RegexMatcher):
-    def __init__(self, context):
-        RegexMatcher.__init__(self, context)
+    def __init__(self):
         self.pattern = re.compile('(?P<textWidth>\d+):')
-
-    def translate(self, result):
-        if self.values:
-            result.append('(' + self.values['textWidth'] + ')')
+        self.template = Template('($textWidth)')
 
 class TagMatcher(RegexMatcher):
-    def __init__(self, context):
-        RegexMatcher.__init__(self, context)
+    def __init__(self):
         self.pattern = re.compile('{(?P<tag>#?\w+)}$')
-
-    def translate(self, result):
-        if self.values:
-            result.append('("' + self.values['tag'] + '")')
+        self.template = Template('.tag("$tag")')
 
 class PropertyMatcher(RegexMatcher):
-    def __init__(self, context):
-        RegexMatcher.__init__(self, context)
+    def __init__(self):
         self.pattern = re.compile('\[(?P<name>#?\w+)=(?P<value>.+)\]$')
-
-    def translate(self, result):
-        if self.values:
-            result.append('.property("' + self.values['name'] + '", "' + self.values['value'] + '")')
+        self.template = Template('.property("$name","$value")')
 
 class TranslatedLine():
     def __init__(self, indentation, text):
@@ -163,37 +132,17 @@ class TranslatedLine():
         self._brace(next_indentation_len)
         return ''.join([ self.indentation, self.text, self.brace ])
 
-def translate_text(context, text):
-    result = []
-    matchers = [
-        ParenMatcher(context),
-        TextRunMatcher(context),
-        QuoteStartMatcher(context),
-        QuoteEndMatcher(context),
-        SizeMatcher(context),
-        TextWidthMatcher(context),
-        TagMatcher(context),
-        PropertyMatcher(context),
-        DefaultMatcher(context)
-    ]
-    for token in text.split():
-        context.new_token()
-        for matcher in matchers:
-            if matcher.matches(token):
-                matcher.translate(result)
-                break
-    return ''.join(result)
-
 if __name__ == '__main__':
     f = open('../sample-data/controls-styling-expected.txt')
-    context = Context()
-    line_pattern = re.compile('^(\s*)(.+)$')
-    last_result = None
-    for line in f:
-        context.new_line()
-        (start, indentation, statement, end) = line_pattern.split(line)
-        if last_result:
-            print last_result.output(indentation)
-        last_result = TranslatedLine(indentation, translate_text(context, statement))
-    if last_result:
-        print last_result.output('')
+    translator = Translator([
+        ParenMatcher(),
+        TextRunMatcher(),
+        QuoteStartMatcher(),
+        QuoteEndMatcher(),
+        SizeMatcher(),
+        TextWidthMatcher(),
+        TagMatcher(),
+        PropertyMatcher(),
+        DefaultMatcher()
+    ])
+    translator.translate_file(f)
