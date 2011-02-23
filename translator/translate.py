@@ -6,6 +6,7 @@ class Translator:
         self.inside_quotes = False
         self.delimiter = None
         self._matchers = matchers
+        self.is_first_token = True
 
     def _new_line(self):
         self.delimiter = None
@@ -20,11 +21,13 @@ class Translator:
 
     def _translate_statement(self, text):
         result = []
+        self.is_first_token = True
         for token in text.split():
             self._new_token()
             for matcher in self._matchers:
                 if matcher.translate(self, token, result):
                     break
+            self.is_first_token = False
         return ''.join(result)
 
     def translate_file(self, f):
@@ -38,13 +41,6 @@ class Translator:
             last_result = TranslatedLine(indentation, self._translate_statement(statement))
         if last_result:
             print last_result.output('')
-
-class ParenMatcher():
-    def translate(self, context, token, result):
-        if token[0] == '(':
-            result.append(token)
-            return True
-        return False
 
 class DefaultMatcher():
     def translate(self, context, token, result):
@@ -72,16 +68,48 @@ class QuoteEndMatcher():
 
 class TextRunMatcher():
     def translate(self, context, token, result):
-        if token == 'run':
-            result.append('Run')
+        if token == 'run' and not context.inside_quotes:
+            result.append('()')
             return True
         return False
 
 class RegexMatcher():
-    def translate(self, context, token, result):
+    def match_and_replace(self, token, result):
         match_object = self.pattern.match(token)
         if match_object:
             result.append(self.template.substitute(match_object.groupdict()))
+            return True
+        return False
+
+    def translate(self, context, token, result):
+        return self.match_and_replace(token, result)
+
+class ParenMatcher(RegexMatcher):
+    def __init__(self):
+        self.pattern = re.compile('(?P<pos>\([^\d,]+)')
+        self.template = Template('.pos$pos')
+    def translate(self, context, token, result):
+        if token[0] == '(':
+            if self.match_and_replace(token, result):
+                return True
+            result.append(token)
+            return True
+        return False
+
+
+class RenderingPrimitiveMatcher(RegexMatcher):
+    def __init__(self):
+        self.pattern = re.compile('Render(?P<name>\w+)')
+        self.template = Template('render("$name")')
+
+    def translate(self, context, token, result):
+        if context.is_first_token:
+            if self.match_and_replace(token, result):
+                return True
+            if token == 'layer':
+                result.append(token + '()')
+            if token == 'text':
+                result.append(token)
             return True
         return False
 
@@ -132,6 +160,7 @@ class TranslatedLine():
 if __name__ == '__main__':
     f = open('../sample-data/controls-styling-expected.txt')
     translator = Translator([
+        RenderingPrimitiveMatcher(),
         ParenMatcher(),
         TextRunMatcher(),
         QuoteStartMatcher(),

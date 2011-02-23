@@ -3,56 +3,27 @@ function chain()
     return chain;
 }
 
-chain.at = function(x, y)
-{
-    return chain;
-}
-
-chain.tag = function(name)
-{
-    return chain;
-}
-
-chain.size = function(w, h)
-{
-    return chain;
-}
-
-chain.contains = function()
-{
-    return chain;
-}
-
-chain.width = function()
-{
-    return chain;
-}
-
-chain.text = function()
-{
-    return chain;
-}
-
-chain.property = function()
-{
-    return chain;
-}
-
 var anonymous;
 var positioned;
 var relative = { positioned: '' };
 
 [
+    'at',
+    'pos',
+    'tag',
+    'size',
+    'contains',
+    'width',
+    'property',
+    'text'
+].forEach(function(method) {
+    chain[method] = chain;
+});
+
+[
     'layer',
-    'RenderView',
-    'textRun',
-    'RenderBlock',
-    'RenderBody',
-    'RenderText',
-    'RenderVideo',
-    'RenderFlexibleBox',
-    'RenderButton',
-    'RenderSlider'
-].forEach(function(renderObject) {
-    window[renderObject] = chain;
+    'render',
+    'text',
+].forEach(function(root) {
+    window[root] = chain;
 });
