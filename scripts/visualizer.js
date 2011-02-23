@@ -8,6 +8,11 @@ chain.at = function(x, y)
     return chain;
 }
 
+chain.tag = function(name)
+{
+    return chain;
+}
+
 chain.size = function(w, h)
 {
     return chain;

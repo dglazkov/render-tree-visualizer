@@ -109,28 +109,25 @@ class TranslatedLine():
     def __init__(self, indentation, text):
         self.indentation = indentation
         self.text = text
-        self.braces = None
 
-    def _brace(self, next_line_indentation):
+    def output(self, next_line_indentation):
+        brace = None
         next_indentation_len = len(next_line_indentation)
         indentation_delta = (next_indentation_len - len(self.indentation)) / 2
         if indentation_delta > 0:
-            self.brace = '.contains(';
+            brace = '.contains(';
         elif indentation_delta == 0:
             if next_indentation_len == 0:
-                self.brace = ';'
+                brace = ';'
             else:
-                self.brace = ','
+                brace = ','
         else:
-            self.brace = ''.rjust(-indentation_delta, ')')
+            brace = ''.rjust(-indentation_delta, ')')
             if next_indentation_len == 0:
-                self.brace += ';'
+                brace += ';'
             else:
-                self.brace += ','
-
-    def output(self, next_indentation_len):
-        self._brace(next_indentation_len)
-        return ''.join([ self.indentation, self.text, self.brace ])
+                brace += ','
+        return ''.join([ self.indentation, self.text, brace ])
 
 if __name__ == '__main__':
     f = open('../sample-data/controls-styling-expected.txt')
