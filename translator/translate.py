@@ -47,6 +47,12 @@ class DefaultMatcher():
         result.append(context.delimiter + token)
         return True
 
+class AnonymousMatcher():
+    def translate(self, context, token, result):
+        if token == '(anonymous)':
+            return True
+        return False
+
 class QuoteStartMatcher():
     def translate(self, context, token, result):
         if token[0] == '"':
@@ -95,7 +101,6 @@ class ParenMatcher(RegexMatcher):
             result.append(token)
             return True
         return False
-
 
 class RenderingPrimitiveMatcher(RegexMatcher):
     def __init__(self):
@@ -161,6 +166,7 @@ if __name__ == '__main__':
     f = open('../sample-data/controls-styling-expected.txt')
     translator = Translator([
         RenderingPrimitiveMatcher(),
+        AnonymousMatcher(),
         ParenMatcher(),
         TextRunMatcher(),
         QuoteStartMatcher(),
