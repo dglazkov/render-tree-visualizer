@@ -1,7 +1,49 @@
-#arena {
+body {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
 }
 
-.object {
+#tree {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  width: 300px;
+  overflow: auto;
+  height: 100%;
+  font-family: Sans-serif;
+  font-size: 12px;
+}
+
+#tree a {
+  text-decoration: none;
+  color: Black;
+}
+
+#tree div {
+  padding: 3px 0 0 10px;
+}
+
+#tree i {
+  padding: 0 0 0 4px;
+}
+
+#stage div:target {
+  opacity: 1;
+  background-color: Red;
+}
+
+#stage {
+  padding: 10px;
+/*    -webkit-perspective: 500;
+    -webkit-transform-style: preserve3d;
+    -webkit-transform: rotateY(10deg); */
+}
+
+#surface {
+  position: absolute;
+}
+
+#surface .layer, #surface .render {
     border: 1px solid rgba(0, 0, 0, .5);
     background: #eee;
     opacity: 0.7;
@@ -10,11 +52,13 @@
     white-space: nowrap;
     overflow: hidden;
     box-sizing: border-box;
-    font-family: Tahoma;
-    font-size: 11px;
+    font-family: Sans-serif;
+    font-size: 10px; /* This seems like the smallest readable size that fits */
     pointer-events: none;
+/*    -webkit-transform: translateZ(10);
+    -webkit-transform-style: preserve3d;  */
 }
 
-b {
-    font-weight: normal;
+#surface .text {
 }
+

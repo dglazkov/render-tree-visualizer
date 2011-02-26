@@ -2,9 +2,17 @@ function Chain(type, renderObject)
 {
     this.type_ = type;
     this.renderObject_ = renderObject;
-    this.div_ = surface.appendChild(document.createElement('div'));
-    this.div_.className = 'object';
-//    this.div_.appendChild(document.createElement('b')).textContent = this.renderObject_ || this.type_.name;
+
+    this.box_ = surface.appendChild(div());
+    this.box_.className = this.type_.name;
+    this.box_.id = uniqueId();
+
+    this.item_ = tree.appendChild(div());
+    this.item_.className = this.box_.className;
+    this.anchor_ = document.createElement('a');
+    this.anchor_.textContent = this.type_.prettyName(this.renderObject_);
+    this.anchor_.href = '#' + this.box_.id;
+    this.item_.appendChild(this.anchor_);
 }
 
 Chain.create = function(type) {
@@ -13,54 +21,68 @@ Chain.create = function(type) {
     }
 }
 
+Chain.prototype.info_ = function(className, text)
+{
+    var result = document.createElement('i');
+    if (className)
+        result.className = className;
+    result.textContent = text;
+    this.anchor_.appendChild(result);
+}
+
 Chain.prototype.setParent = function(parent)
 {
-    parent.div_.appendChild(this.div_);
+    parent.box_.appendChild(this.box_);
+    parent.item_.appendChild(this.item_);
 }
 
 Chain.prototype.at = function(x, y)
 {
-    this.div_.style.left = px(x);
-    this.div_.style.top = px(y);
+    this.box_.style.left = px(adjust(x, -1));
+    this.box_.style.top = px(adjust(y, -1));
+    this.info_('at', 'at ' + x + ', ' + y);
     return this;
 }
 
 Chain.prototype.pos = function(positioning)
 {
     if (positioning == positioned)
-        this.div_.style.position = 'static';
+        this.box_.style.position = 'static';
     else if (positioning == relative.positioned)
-        this.div_.style.position = 'relative';
+        this.box_.style.position = 'relative';
     return this;
 }
 
 Chain.prototype.tag = function(tag)
 {
-//    this.div_.appendChild(document.createElement('i')).textContent = tag;
+    this.info_('tag', tag);
     return this;
 }
 
 Chain.prototype.size = function(w, h)
 {
-    this.div_.style.width = px(w);
-    this.div_.style.height = px(h)
+    this.box_.style.width = px(w);
+    this.box_.style.height = px(h);
+    this.info_('size', w + 'x' + h);
     return this;
 }
 
 Chain.prototype.width = function(w)
 {
-    this.div_.style.width = px(w);
+    this.box_.style.width = px(w);
+    this.info_('size', 'width ' + w);
     return this;
 }
 
 Chain.prototype.property = function(name, value)
 {
+    // FIXME: Add handling of properties
     return this;
 }
 
 Chain.prototype.text = function(t)
 {
-    this.div_.textContent = t;
+    this.box_.textContent = t;
     return this;
 }
 
@@ -68,7 +90,7 @@ Chain.prototype.contains = function()
 {
     Array.prototype.slice.call(arguments, 0).forEach(function(child)
     {
-        child.setParent(this)
+        child.setParent(this);
     }, this);
     return this;
 }
@@ -80,12 +102,24 @@ var relative = { positioned: 2 };
 [
     {
         name: 'layer',
+        prettyName: function(name)
+        {
+            return 'layer';
+        }
     },
     {
-        name: 'render'
+        name: 'render',
+        prettyName: function(name)
+        {
+            return 'Render' + name;
+        }
     },
     {
-        name: 'text'
+        name: 'text',
+        prettyName: function(name)
+        {
+            return 'textRun';
+        }
     }
 ].forEach(function(root) {
     window[root.name] = Chain.create(root);
@@ -93,15 +127,35 @@ var relative = { positioned: 2 };
 
 window.addEventListener('DOMContentLoaded', function()
 {
-    var arena = document.createElement('div');
-    arena.appendChild(surface);
-    document.body.appendChild(arena);
+    var stage = div('stage');
+    stage.appendChild(surface);
+    document.body.appendChild(tree);
+    document.body.appendChild(stage);
 }, false);
 
-var surface = document.createElement('div');
-surface.id = 'surface';
+var tree = div('tree');
+var surface = div('surface');
+var currentUniqueId = 0;
+
+function adjust(n, delta)
+{
+    return parseInt(n, 10) + delta;
+}
+
+function div(id)
+{
+    var result = document.createElement('div');
+    if (id)
+        result.id = id;
+    return result;
+}
 
 function px(n)
 {
     return n + 'px';
+}
+
+function uniqueId()
+{
+    return 'b' + currentUniqueId++;
 }
