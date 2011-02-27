@@ -6,6 +6,7 @@ function Chain(type, renderObject)
     this.box_ = surface.appendChild(div());
     this.box_.className = this.type_.name;
     this.box_.id = uniqueId();
+    this.type_.adjustBoxStyle(this.box_);
 
     this.item_ = tree.appendChild(div());
     this.item_.className = this.box_.className;
@@ -99,12 +100,18 @@ var anonymous;
 var positioned = 1;
 var relative = { positioned: 2 };
 
+var layerZOffset = 0;
+
 [
     {
         name: 'layer',
         prettyName: function(name)
         {
             return 'layer';
+        },
+        adjustBoxStyle: function(box)
+        {
+            box.style.webkitTransform = 'translateZ(' + (layerZOffset++ * 20) + 'px)';
         }
     },
     {
@@ -112,14 +119,16 @@ var relative = { positioned: 2 };
         prettyName: function(name)
         {
             return 'Render' + name;
-        }
+        },
+        adjustBoxStyle: function(box) { }
     },
     {
         name: 'text',
         prettyName: function(name)
         {
             return 'textRun';
-        }
+        },
+        adjustBoxStyle: function(box) { }
     }
 ].forEach(function(root) {
     window[root.name] = Chain.create(root);
@@ -131,6 +140,29 @@ window.addEventListener('DOMContentLoaded', function()
     stage.appendChild(surface);
     document.body.appendChild(tree);
     document.body.appendChild(stage);
+
+}, false);
+
+var mouseDown = false;
+
+window.addEventListener('mousedown', function()
+{
+    mouseDown = true;
+}, false);
+
+window.addEventListener('mouseup', function()
+{
+    mouseDown = false;
+}, false);
+
+window.addEventListener('mousemove', function(evt)
+{
+    if (!mouseDown)
+        return;
+
+    var degX = (evt.pageX * 180 / document.documentElement.clientWidth) - 90;
+    var degY = 90 - (evt.pageY * 180 / document.documentElement.clientHeight);
+    surface.style.webkitTransform = 'rotateX(' + degY + 'deg) rotateY(' + degX + 'deg)';
 }, false);
 
 var tree = div('tree');
