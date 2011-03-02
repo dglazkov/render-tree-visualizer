@@ -6,7 +6,6 @@ function Chain(type, renderObject)
     this.box_ = surface.appendChild(div());
     this.box_.className = this.type_.name;
     this.box_.id = uniqueId();
-    this.type_.adjustBoxStyle(this.box_);
 
     this.item_ = tree.appendChild(div());
     this.item_.className = this.box_.className;
@@ -14,6 +13,8 @@ function Chain(type, renderObject)
     this.anchor_.textContent = this.type_.prettyName(this.renderObject_);
     this.anchor_.href = '#' + this.box_.id;
     this.item_.appendChild(this.anchor_);
+
+    this.depth_ = 1;
 }
 
 Chain.create = function(type) {
@@ -31,8 +32,19 @@ Chain.prototype.info_ = function(className, text)
     this.anchor_.appendChild(result);
 }
 
+Chain.prototype.updateTreeDepth_ = function(depth)
+{
+    if (!this.parent_) {
+        this.box_.style.webkitTransform = 'translateZ(' + (depth * 20) + 'px)';
+        return;
+    }
+    this.parent_.updateTreeDepth_(depth + 1);
+}
+
 Chain.prototype.setParent = function(parent)
 {
+    parent.depth_ = this.depth_ + 1;
+    parent.type_.adjustBoxStyle(parent.box_, parent.depth_);
     parent.box_.appendChild(this.box_);
     parent.item_.appendChild(this.item_);
 }
@@ -109,9 +121,10 @@ var layerZOffset = 0;
         {
             return 'layer';
         },
-        adjustBoxStyle: function(box)
+        adjustBoxStyle: function(box, depth)
         {
-            box.style.webkitTransform = 'translateZ(' + (layerZOffset++ * 20) + 'px)';
+            box.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
+            layerZOffset += depth;
         }
     },
     {

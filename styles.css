@@ -2,6 +2,7 @@ body {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
+  -webkit-user-select: none;
 }
 
 #tree {
@@ -28,19 +29,18 @@ body {
 }
 
 #stage {
-  padding: 10px;
-  -webkit-transform-style: preserve-3d;
-}
-
-#surface div:target {
-  opacity: 1;
-  background-color: Red;
+  overflow: hidden;
+  -webkit-box-flex: 1;
 }
 
 #surface {
   -webkit-transform-style: preserve-3d;
-  width: 800px;
-  height: 600px;
+  height: 100%;
+}
+
+#surface div:target {
+  background-color: rgba(255, 0, 0, 0.4);
+  border: 1px solid rgba(255, 0, 0, 1);
 }
 
 #surface div {
