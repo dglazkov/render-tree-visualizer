@@ -147,6 +147,18 @@ var layerZOffset = 0;
     window[root.name] = Chain.create(root);
 });
 
+var mouseDown = false;
+var degX = 0;
+var degY = 0;
+var lastX = 0;
+var lastY = 0;
+var ROTATE_SENSITIVITY = 0.1;
+var INITIAL_ROTATION_DELTA = 5;
+var zoomFactor = 1;
+var MINIMUM_ZOOM_FACTOR = 0.5;
+var MAXIMUM_ZOOM_FACTOR = 10;
+var WHEEL_SENSITIVITY = 0.005;
+
 window.addEventListener('DOMContentLoaded', function()
 {
     var stage = div('stage');
@@ -154,18 +166,21 @@ window.addEventListener('DOMContentLoaded', function()
     document.body.appendChild(tree);
     document.body.appendChild(stage);
 
-}, false);
+    stage.addEventListener('mousedown', function()
+    {
+        mouseDown = true;
+    }, false);
 
-var mouseDown = false;
+    stage.addEventListener('mousewheel', function(evt)
+    {
+        zoomFactor += evt.wheelDeltaY * WHEEL_SENSITIVITY;
+        if (zoomFactor < MINIMUM_ZOOM_FACTOR)
+            zoomFactor = MINIMUM_ZOOM_FACTOR;
+        else if (zoomFactor > MAXIMUM_ZOOM_FACTOR)
+            zoomFactor = MAXIMUM_ZOOM_FACTOR;
+        updateSurfaceTransform();
+    }, false);
 
-window.addEventListener('mousedown', function()
-{
-    mouseDown = true;
-}, false);
-
-window.addEventListener('mouseup', function()
-{
-    mouseDown = false;
 }, false);
 
 window.addEventListener('mousemove', function(evt)
@@ -173,14 +188,31 @@ window.addEventListener('mousemove', function(evt)
     if (!mouseDown)
         return;
 
-    var degX = (evt.pageX * 180 / document.documentElement.clientWidth) - 90;
-    var degY = 90 - (evt.pageY * 180 / document.documentElement.clientHeight);
-    surface.style.webkitTransform = 'rotateX(' + degY + 'deg) rotateY(' + degX + 'deg)';
+    deltaX = lastX ? (evt.pageX - lastX) : INITIAL_ROTATION_DELTA; 
+    deltaY = lastY ? (lastY - evt.pageY) : INITIAL_ROTATION_DELTA;
+    lastX = evt.pageX;
+    lastY = evt.pageY;
+
+    degX += deltaX * ROTATE_SENSITIVITY;
+    degY += deltaY * ROTATE_SENSITIVITY;
+    updateSurfaceTransform();
 }, false);
 
 var tree = div('tree');
 var surface = div('surface');
 var currentUniqueId = 0;
+
+window.addEventListener('mouseup', function()
+{
+    mouseDown = false;
+    lastX = 0;
+    lastY = 0;
+}, false);
+
+function updateSurfaceTransform()
+{
+    surface.style.webkitTransform = 'rotateX(' + degY + 'deg) rotateY(' + degX + 'deg) scale3d(' + zoomFactor + ',' + zoomFactor + ',' + zoomFactor + ')';
+}
 
 function adjust(n, delta)
 {
