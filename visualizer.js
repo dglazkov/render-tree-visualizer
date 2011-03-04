@@ -147,17 +147,38 @@ var layerZOffset = 0;
     window[root.name] = Chain.create(root);
 });
 
-var mouseDown = false;
-var degX = 0;
-var degY = 0;
-var lastX = 0;
-var lastY = 0;
 var ROTATE_SENSITIVITY = 0.1;
 var INITIAL_ROTATION_DELTA = 5;
-var zoomFactor = 1;
 var MINIMUM_ZOOM_FACTOR = 0.5;
 var MAXIMUM_ZOOM_FACTOR = 10;
 var WHEEL_SENSITIVITY = 0.005;
+var TRANSFORM_TEMPLATE = [
+    'rotateX(',
+    1,
+    'deg) rotateY(',
+    3,
+    'deg) scale3d(',
+    5,
+    ',',
+    7,
+    ',',
+    9,
+    ') translate3d(',
+    11,
+    'px,',
+    13,
+    'px,0)'
+];
+
+
+var mouseDown = false;
+var degX = 0;
+var degY = 0;
+var posX = 0;
+var posY = 0;
+var lastX = 0;
+var lastY = 0;
+var zoomFactor = 1;
 
 window.addEventListener('DOMContentLoaded', function()
 {
@@ -188,13 +209,18 @@ window.addEventListener('mousemove', function(evt)
     if (!mouseDown)
         return;
 
-    deltaX = lastX ? (evt.pageX - lastX) : INITIAL_ROTATION_DELTA; 
-    deltaY = lastY ? (lastY - evt.pageY) : INITIAL_ROTATION_DELTA;
+    var deltaX = lastX ? (evt.pageX - lastX) : 0; 
+    var deltaY = lastY ? (lastY - evt.pageY) : 0;
     lastX = evt.pageX;
     lastY = evt.pageY;
 
-    degX += deltaX * ROTATE_SENSITIVITY;
-    degY += deltaY * ROTATE_SENSITIVITY;
+    if (evt.shiftKey) {
+        posX += deltaX;
+        posY -= deltaY;
+    } else {
+        degX += deltaX * ROTATE_SENSITIVITY;
+        degY += deltaY * ROTATE_SENSITIVITY;
+    }
     updateSurfaceTransform();
 }, false);
 
@@ -211,7 +237,14 @@ window.addEventListener('mouseup', function()
 
 function updateSurfaceTransform()
 {
-    surface.style.webkitTransform = 'rotateX(' + degY + 'deg) rotateY(' + degX + 'deg) scale3d(' + zoomFactor + ',' + zoomFactor + ',' + zoomFactor + ')';
+    TRANSFORM_TEMPLATE[1] = degY;
+    TRANSFORM_TEMPLATE[3] = degX;
+    TRANSFORM_TEMPLATE[5] = zoomFactor;
+    TRANSFORM_TEMPLATE[7] = zoomFactor;
+    TRANSFORM_TEMPLATE[9] = zoomFactor;
+    TRANSFORM_TEMPLATE[11] = posX;
+    TRANSFORM_TEMPLATE[13] = posY;
+    surface.style.webkitTransform = TRANSFORM_TEMPLATE.join('');
 }
 
 function adjust(n, delta)
