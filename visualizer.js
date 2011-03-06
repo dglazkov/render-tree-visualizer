@@ -9,6 +9,7 @@ function Chain(type, renderObject)
 
     this.item_ = tree.appendChild(div());
     this.item_.className = this.box_.className;
+    this.callIfExists_(this.type_.adjustItem);
     this.anchor_ = document.createElement('a');
     this.anchor_.textContent = this.type_.prettyName(this.renderObject_);
     this.anchor_.href = '#' + this.box_.id;
@@ -21,6 +22,11 @@ Chain.create = function(type) {
     return function(renderObject) {
         return new Chain(type, renderObject);
     }
+}
+
+Chain.prototype.callIfExists_ = function(fn)
+{
+    fn && fn.call(this);
 }
 
 Chain.prototype.info_ = function(className, text)
@@ -44,7 +50,7 @@ Chain.prototype.updateTreeDepth_ = function(depth)
 Chain.prototype.setParent = function(parent)
 {
     parent.depth_ = this.depth_ + 1;
-    parent.type_.adjustBoxStyle(parent.box_, parent.depth_);
+    parent.callIfExists_(parent.type_.adjustBoxStyle);
     parent.box_.appendChild(this.box_);
     parent.item_.appendChild(this.item_);
 }
@@ -121,10 +127,14 @@ var layerZOffset = 0;
         {
             return 'layer';
         },
-        adjustBoxStyle: function(box, depth)
+        adjustBoxStyle: function()
         {
-            box.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
-            layerZOffset += depth;
+            this.box_.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
+            layerZOffset += this.depth_;
+        },
+        adjustItem: function()
+        {
+            this.item_.setAttribute('tabindex', currentTabIndex++);
         }
     },
     {
@@ -132,44 +142,36 @@ var layerZOffset = 0;
         prettyName: function(name)
         {
             return 'Render' + name;
-        },
-        adjustBoxStyle: function(box) { }
+        }
     },
     {
         name: 'text',
         prettyName: function(name)
         {
             return 'textRun';
-        },
-        adjustBoxStyle: function(box) { }
+        }
     }
 ].forEach(function(root) {
     window[root.name] = Chain.create(root);
 });
 
-var ROTATE_SENSITIVITY = 0.1;
+var INITIAL_TABINDEX = 1;
+
+var MINIMUM_ROTATION_DEG = -90;
+var MAXIMUM_ROTATION_DEG = 90;
+var ROTATE_SENSITIVITY = 0.12;
 var INITIAL_ROTATION_DELTA = 5;
+
 var MINIMUM_ZOOM_FACTOR = 0.5;
 var MAXIMUM_ZOOM_FACTOR = 10;
-var WHEEL_SENSITIVITY = 0.005;
-var TRANSFORM_TEMPLATE = [
-    'rotateX(',
-    1,
-    'deg) rotateY(',
-    3,
-    'deg) scale3d(',
-    5,
-    ',',
-    7,
-    ',',
-    9,
-    ') translate3d(',
-    11,
-    'px,',
-    13,
-    'px,0)'
-];
+var ZOOM_SENSITIVITY = 0.005;
 
+var TRANSFORM_TEMPLATE = [
+    'rotateX(', 1, 'deg) ' +
+    'rotateY(', 3, 'deg) ' +
+    'scale3d(', 5, ',', 7, ',', 9, ') ' +
+    'translate3d(', 11, 'px,', 13, 'px,0)'
+];
 
 var mouseDown = false;
 var degX = 0;
@@ -179,9 +181,12 @@ var posY = 0;
 var lastX = 0;
 var lastY = 0;
 var zoomFactor = 1;
+var currentTabIndex = INITIAL_TABINDEX;
 
 window.addEventListener('DOMContentLoaded', function()
 {
+    updateSurfaceTransform();
+
     var stage = div('stage');
     stage.appendChild(surface);
     document.body.appendChild(tree);
@@ -194,13 +199,14 @@ window.addEventListener('DOMContentLoaded', function()
 
     stage.addEventListener('mousewheel', function(evt)
     {
-        zoomFactor += evt.wheelDeltaY * WHEEL_SENSITIVITY;
+        zoomFactor += evt.wheelDeltaY * ZOOM_SENSITIVITY;
         if (zoomFactor < MINIMUM_ZOOM_FACTOR)
             zoomFactor = MINIMUM_ZOOM_FACTOR;
         else if (zoomFactor > MAXIMUM_ZOOM_FACTOR)
             zoomFactor = MAXIMUM_ZOOM_FACTOR;
         updateSurfaceTransform();
     }, false);
+
 
 }, false);
 

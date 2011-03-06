@@ -2,17 +2,15 @@ body {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  -webkit-user-select: none;
 }
 
 #tree {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
   width: 300px;
   overflow: auto;
   height: 100%;
   font-family: Sans-serif;
   font-size: 12px;
+  -webkit-user-select: none;
 }
 
 #tree a {
@@ -24,12 +22,17 @@ body {
   padding: 3px 0 0 10px;
 }
 
+#tree div.layer:focus {
+  outline: none;
+}
+
 #tree i {
   padding: 0 0 0 4px;
 }
 
 #stage {
   overflow: hidden;
+  -webkit-user-select: none;
   -webkit-box-flex: 1;
 }
 
