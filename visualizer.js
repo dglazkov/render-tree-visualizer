@@ -157,14 +157,13 @@ var layerZOffset = 0;
 
 var INITIAL_TABINDEX = 1;
 
-var MINIMUM_ROTATION_DEG = -90;
-var MAXIMUM_ROTATION_DEG = 90;
-var ROTATE_SENSITIVITY = 0.12;
-var INITIAL_ROTATION_DELTA = 5;
+var CONSTRAINTS = {
+    rotation: [ -89.8, 89.8, 0.12 ],
+    zoom: [ 0.5, 10, 0.005 ],
+    pos: [ -400, 400, 1 ]
+}
 
-var MINIMUM_ZOOM_FACTOR = 0.5;
-var MAXIMUM_ZOOM_FACTOR = 10;
-var ZOOM_SENSITIVITY = 0.005;
+var INITIAL_ROTATION_DELTA = 5;
 
 var TRANSFORM_TEMPLATE = [
     'rotateX(', 1, 'deg) ' +
@@ -174,13 +173,13 @@ var TRANSFORM_TEMPLATE = [
 ];
 
 var mouseDown = false;
-var degX = 0;
-var degY = 0;
-var posX = 0;
-var posY = 0;
+var degX = new ConstrainedValue(0, CONSTRAINTS.rotation);
+var degY = new ConstrainedValue(0, CONSTRAINTS.rotation);
+var posX = new ConstrainedValue(0, CONSTRAINTS.pos);
+var posY = new ConstrainedValue(0, CONSTRAINTS.pos);
 var lastX = 0;
 var lastY = 0;
-var zoomFactor = 1;
+var zoomFactor = new ConstrainedValue(1, CONSTRAINTS.zoom);
 var currentTabIndex = INITIAL_TABINDEX;
 
 window.addEventListener('DOMContentLoaded', function()
@@ -199,11 +198,7 @@ window.addEventListener('DOMContentLoaded', function()
 
     stage.addEventListener('mousewheel', function(evt)
     {
-        zoomFactor += evt.wheelDeltaY * ZOOM_SENSITIVITY;
-        if (zoomFactor < MINIMUM_ZOOM_FACTOR)
-            zoomFactor = MINIMUM_ZOOM_FACTOR;
-        else if (zoomFactor > MAXIMUM_ZOOM_FACTOR)
-            zoomFactor = MAXIMUM_ZOOM_FACTOR;
+        zoomFactor.inc(evt.wheelDeltaY);
         updateSurfaceTransform();
     }, false);
 
@@ -221,11 +216,11 @@ window.addEventListener('mousemove', function(evt)
     lastY = evt.pageY;
 
     if (evt.shiftKey) {
-        posX += deltaX;
-        posY -= deltaY;
+        posX.inc(deltaX);
+        posY.inc(-deltaY);
     } else {
-        degX += deltaX * ROTATE_SENSITIVITY;
-        degY += deltaY * ROTATE_SENSITIVITY;
+        degX.inc(deltaX);
+        degY.inc(deltaY);
     }
     updateSurfaceTransform();
 }, false);
@@ -243,14 +238,39 @@ window.addEventListener('mouseup', function()
 
 function updateSurfaceTransform()
 {
-    TRANSFORM_TEMPLATE[1] = degY;
-    TRANSFORM_TEMPLATE[3] = degX;
-    TRANSFORM_TEMPLATE[5] = zoomFactor;
-    TRANSFORM_TEMPLATE[7] = zoomFactor;
-    TRANSFORM_TEMPLATE[9] = zoomFactor;
-    TRANSFORM_TEMPLATE[11] = posX;
-    TRANSFORM_TEMPLATE[13] = posY;
+    TRANSFORM_TEMPLATE[1] = degY.value();
+    TRANSFORM_TEMPLATE[3] = degX.value();
+    TRANSFORM_TEMPLATE[5] = zoomFactor.value();
+    TRANSFORM_TEMPLATE[7] = zoomFactor.value();
+    TRANSFORM_TEMPLATE[9] = zoomFactor.value();
+    TRANSFORM_TEMPLATE[11] = posX.value();
+    TRANSFORM_TEMPLATE[13] = posY.value();
     surface.style.webkitTransform = TRANSFORM_TEMPLATE.join('');
+}
+
+function ConstrainedValue(initialValue, constraints)
+{
+    this.value_ = initialValue;
+    this.min_ = constraints[0];
+    this.max_ = constraints[1];
+    this.coefficient_ = constraints[2];
+}
+
+ConstrainedValue.prototype.inc = function(delta)
+{
+    var value = this.value_ + delta * this.coefficient_;
+    if (value < this.min_)
+        this.value_ = this.min_;
+    else if (value > this.max_)
+        this.value_ = this.max_;
+    else
+        this.value_ = value;
+}
+
+// FIXME: Use property getter.
+ConstrainedValue.prototype.value = function()
+{
+    return this.value_;
 }
 
 function adjust(n, delta)
