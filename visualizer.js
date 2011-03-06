@@ -24,95 +24,112 @@ Chain.create = function(type) {
     }
 }
 
-Chain.prototype.callIfExists_ = function(fn)
-{
-    fn && fn.call(this);
-}
-
-Chain.prototype.info_ = function(className, text)
-{
-    var result = document.createElement('i');
-    if (className)
-        result.className = className;
-    result.textContent = text;
-    this.anchor_.appendChild(result);
-}
-
-Chain.prototype.updateTreeDepth_ = function(depth)
-{
-    if (!this.parent_) {
-        this.box_.style.webkitTransform = 'translateZ(' + (depth * 20) + 'px)';
-        return;
-    }
-    this.parent_.updateTreeDepth_(depth + 1);
-}
-
-Chain.prototype.setParent = function(parent)
-{
-    parent.depth_ = this.depth_ + 1;
-    parent.callIfExists_(parent.type_.adjustBoxStyle);
-    parent.box_.appendChild(this.box_);
-    parent.item_.appendChild(this.item_);
-}
-
-Chain.prototype.at = function(x, y)
-{
-    this.box_.style.left = px(adjust(x, -1));
-    this.box_.style.top = px(adjust(y, -1));
-    this.info_('at', 'at ' + x + ', ' + y);
-    return this;
-}
-
-Chain.prototype.pos = function(positioning)
-{
-    if (positioning == positioned)
-        this.box_.style.position = 'static';
-    else if (positioning == relative.positioned)
-        this.box_.style.position = 'relative';
-    return this;
-}
-
-Chain.prototype.tag = function(tag)
-{
-    this.info_('tag', tag);
-    return this;
-}
-
-Chain.prototype.size = function(w, h)
-{
-    this.box_.style.width = px(w);
-    this.box_.style.height = px(h);
-    this.info_('size', w + 'x' + h);
-    return this;
-}
-
-Chain.prototype.width = function(w)
-{
-    this.box_.style.width = px(w);
-    this.info_('size', 'width ' + w);
-    return this;
-}
-
-Chain.prototype.property = function(name, value)
-{
-    // FIXME: Add handling of properties
-    return this;
-}
-
-Chain.prototype.text = function(t)
-{
-    this.box_.textContent = t;
-    return this;
-}
-
-Chain.prototype.contains = function()
-{
-    Array.prototype.slice.call(arguments, 0).forEach(function(child)
+Chain.prototype = {
+    callIfExists_: function(fn)
     {
-        child.setParent(this);
-    }, this);
-    return this;
+        fn && fn.call(this);
+    },
+    info_: function(className, text)
+    {
+        var result = document.createElement('i');
+        if (className)
+            result.className = className;
+        result.textContent = text;
+        this.anchor_.appendChild(result);
+    },
+    updateTreeDepth_: function(depth)
+    {
+        if (!this.parent_) {
+            this.box_.style.webkitTransform = 'translateZ(' + (depth * 20) + 'px)';
+            return;
+        }
+        this.parent_.updateTreeDepth_(depth + 1);
+    },
+    setParent: function(parent)
+    {
+        parent.depth_ = this.depth_ + 1;
+        parent.callIfExists_(parent.type_.adjustBoxStyle);
+        parent.box_.appendChild(this.box_);
+        parent.item_.appendChild(this.item_);
+    },
+    at: function(x, y)
+    {
+        this.box_.style.left = px(adjust(x, -1));
+        this.box_.style.top = px(adjust(y, -1));
+        this.info_('at', 'at ' + x + ', ' + y);
+        return this;
+    },
+    pos: function(positioning)
+    {
+        if (positioning == positioned)
+            this.box_.style.position = 'static';
+        else if (positioning == relative.positioned)
+            this.box_.style.position = 'relative';
+        return this;
+    },
+    tag: function(tag)
+    {
+        this.info_('tag', tag);
+        return this;
+    },
+    size: function(w, h)
+    {
+        this.box_.style.width = px(w);
+        this.box_.style.height = px(h);
+        this.info_('size', w + 'x' + h);
+        return this;
+    },
+    width: function(w)
+    {
+        this.box_.style.width = px(w);
+        this.info_('size', 'width ' + w);
+        return this;
+    },
+    property: function(name, value)
+    {
+        // FIXME: Add handling of properties
+        return this;
+    },
+    text: function(t)
+    {
+        this.box_.textContent = t;
+        return this;
+    },
+    contains: function()
+    {
+        Array.prototype.slice.call(arguments, 0).forEach(function(child)
+        {
+            child.setParent(this);
+        }, this);
+        return this;
+    }
+};
+
+function ConstrainedValue(initialValue, constraints)
+{
+    this.value_ = initialValue;
+    this.min_ = constraints[0];
+    this.max_ = constraints[1];
+    this.coefficient_ = constraints[2];
 }
+
+ConstrainedValue.prototype = {
+    inc: function(delta)
+    {
+        var value = this.value_ + delta * this.coefficient_;
+        if (value < this.min_)
+            this.value_ = this.min_;
+        else if (value > this.max_)
+            this.value_ = this.max_;
+        else
+            this.value_ = value;
+    },
+    get value()
+    {
+        return this.value_;
+    }
+};
+
 
 var anonymous;
 var positioned = 1;
@@ -162,8 +179,6 @@ var CONSTRAINTS = {
     zoom: [ 0.5, 10, 0.005 ],
     pos: [ -400, 400, 1 ]
 }
-
-var INITIAL_ROTATION_DELTA = 5;
 
 var TRANSFORM_TEMPLATE = [
     'rotateX(', 1, 'deg) ' +
@@ -238,44 +253,31 @@ window.addEventListener('mouseup', function()
 
 function updateSurfaceTransform()
 {
-    TRANSFORM_TEMPLATE[1] = degY.value();
-    TRANSFORM_TEMPLATE[3] = degX.value();
-    TRANSFORM_TEMPLATE[5] = zoomFactor.value();
-    TRANSFORM_TEMPLATE[7] = zoomFactor.value();
-    TRANSFORM_TEMPLATE[9] = zoomFactor.value();
-    TRANSFORM_TEMPLATE[11] = posX.value();
-    TRANSFORM_TEMPLATE[13] = posY.value();
+    TRANSFORM_TEMPLATE[1] = degY.value;
+    TRANSFORM_TEMPLATE[3] = degX.value;
+    TRANSFORM_TEMPLATE[5] = zoomFactor.value;
+    TRANSFORM_TEMPLATE[7] = zoomFactor.value;
+    TRANSFORM_TEMPLATE[9] = zoomFactor.value;
+    TRANSFORM_TEMPLATE[11] = posX.value;
+    TRANSFORM_TEMPLATE[13] = posY.value;
     surface.style.webkitTransform = TRANSFORM_TEMPLATE.join('');
-}
-
-function ConstrainedValue(initialValue, constraints)
-{
-    this.value_ = initialValue;
-    this.min_ = constraints[0];
-    this.max_ = constraints[1];
-    this.coefficient_ = constraints[2];
-}
-
-ConstrainedValue.prototype.inc = function(delta)
-{
-    var value = this.value_ + delta * this.coefficient_;
-    if (value < this.min_)
-        this.value_ = this.min_;
-    else if (value > this.max_)
-        this.value_ = this.max_;
-    else
-        this.value_ = value;
-}
-
-// FIXME: Use property getter.
-ConstrainedValue.prototype.value = function()
-{
-    return this.value_;
 }
 
 function adjust(n, delta)
 {
     return parseInt(n, 10) + delta;
+}
+
+function define() {
+
+  function f() {
+    var el = document.createElement('div');
+    el.__proto__ = f.prototype;
+    el.decorate && el.decorate();
+    return el;
+  }
+
+  return f;
 }
 
 function div(id)
