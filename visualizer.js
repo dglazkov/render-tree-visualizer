@@ -105,6 +105,10 @@ Chain.prototype = {
     }
 };
 
+var anonymous;
+var positioned = 1;
+var relative = { positioned: 2 };
+
 function ConstrainedValue(initialValue, constraints)
 {
     this.value_ = initialValue;
@@ -124,16 +128,11 @@ ConstrainedValue.prototype = {
         else
             this.value_ = value;
     },
-    get value()
+    toString: function()
     {
-        return this.value_;
+        return String(this.value_);
     }
 };
-
-
-var anonymous;
-var positioned = 1;
-var relative = { positioned: 2 };
 
 var layerZOffset = 0;
 
@@ -180,104 +179,121 @@ var CONSTRAINTS = {
     pos: [ -400, 400, 1 ]
 }
 
-var TRANSFORM_TEMPLATE = [
-    'rotateX(', 1, 'deg) ' +
-    'rotateY(', 3, 'deg) ' +
-    'scale3d(', 5, ',', 7, ',', 9, ') ' +
-    'translate3d(', 11, 'px,', 13, 'px,0)'
-];
-
-var mouseDown = false;
-var degX = new ConstrainedValue(0, CONSTRAINTS.rotation);
-var degY = new ConstrainedValue(0, CONSTRAINTS.rotation);
-var posX = new ConstrainedValue(0, CONSTRAINTS.pos);
-var posY = new ConstrainedValue(0, CONSTRAINTS.pos);
-var lastX = 0;
-var lastY = 0;
-var zoomFactor = new ConstrainedValue(1, CONSTRAINTS.zoom);
 var currentTabIndex = INITIAL_TABINDEX;
+
+var Surface = customElement('div', {
+    template_: [
+        'rotateX(', 1, 'deg) ' +
+        'rotateY(', 3, 'deg) ' +
+        'scale3d(', 5, ',', 7, ',', 9, ') ' +
+        'translate3d(', 11, 'px,', 13, 'px,0)'
+    ],
+    lastX: 0,
+    lastY: 0,
+    degX: new ConstrainedValue(0, CONSTRAINTS.rotation),
+    degY: new ConstrainedValue(0, CONSTRAINTS.rotation),
+    posX: new ConstrainedValue(0, CONSTRAINTS.pos),
+    posY: new ConstrainedValue(0, CONSTRAINTS.pos),
+    zoomFactor: new ConstrainedValue(1, CONSTRAINTS.zoom),
+    mouseDown_: false,
+    decorate: function()
+    {
+        this.id = 'surface';
+        this.template_[1] = this.degY;
+        this.template_[3] = this.degX;
+        this.template_[5] = this.zoomFactor;
+        this.template_[7] = this.zoomFactor;
+        this.template_[9] = this.zoomFactor;
+        this.template_[11] = this.posX;
+        this.template_[13] = this.posY;
+        this.updatePosition();
+    },
+    registerEvents: function(stage)
+    {
+        stage.addEventListener('mousedown', this.onMouseDown_.bind(this), false);
+        stage.addEventListener('mousewheel', this.onMouseWheel_.bind(this), false);
+        // Listen everywhere, because mouse might be let go anywhere on page.
+        window.addEventListener('mouseup', this.onMouseUp_.bind(this), false);
+        // Similarly, moving a mouse out of stage should not stop rotation.
+        window.addEventListener('mousemove', this.onMouseMove_.bind(this), false);
+    },
+    updatePosition: function()
+    {
+        this.style.webkitTransform = this.template_.join('');
+    },
+    onMouseDown_: function()
+    {
+        this.mouseDown_ = true;
+    },
+    onMouseUp_: function()
+    {
+        this.mouseDown_ = false;
+        this.lastX = 0;
+        this.lastY = 0;
+    },
+    onMouseWheel_: function(evt)
+    {
+        this.zoomFactor.inc(evt.wheelDeltaY);
+        this.updatePosition();
+    },
+    onMouseMove_: function(evt)
+    {
+        if (!this.mouseDown_)
+            return;
+
+        var deltaX = this.lastX ? (evt.pageX - this.lastX) : 0;
+        var deltaY = this.lastY ? (this.lastY - evt.pageY) : 0;
+        this.lastX = evt.pageX;
+        this.lastY = evt.pageY;
+
+        if (evt.shiftKey) {
+            this.posX.inc(deltaX);
+            this.posY.inc(-deltaY);
+        } else {
+            this.degX.inc(deltaX);
+            this.degY.inc(deltaY);
+        }
+        this.updatePosition();
+    }
+});
+
+// FIXME: This is needed for Chain. Eliminate eventually.
+var surface = new Surface();
+
+var Stage = customElement('div', {
+    decorate: function()
+    {
+        this.id = 'stage';
+        this.appendChild(surface).registerEvents(this);
+    }
+});
 
 window.addEventListener('DOMContentLoaded', function()
 {
-    updateSurfaceTransform();
-
-    var stage = div('stage');
-    stage.appendChild(surface);
+    var stage = new Stage();
     document.body.appendChild(tree);
     document.body.appendChild(stage);
-
-    stage.addEventListener('mousedown', function()
-    {
-        mouseDown = true;
-    }, false);
-
-    stage.addEventListener('mousewheel', function(evt)
-    {
-        zoomFactor.inc(evt.wheelDeltaY);
-        updateSurfaceTransform();
-    }, false);
-
-
-}, false);
-
-window.addEventListener('mousemove', function(evt)
-{
-    if (!mouseDown)
-        return;
-
-    var deltaX = lastX ? (evt.pageX - lastX) : 0; 
-    var deltaY = lastY ? (lastY - evt.pageY) : 0;
-    lastX = evt.pageX;
-    lastY = evt.pageY;
-
-    if (evt.shiftKey) {
-        posX.inc(deltaX);
-        posY.inc(-deltaY);
-    } else {
-        degX.inc(deltaX);
-        degY.inc(deltaY);
-    }
-    updateSurfaceTransform();
 }, false);
 
 var tree = div('tree');
-var surface = div('surface');
 var currentUniqueId = 0;
-
-window.addEventListener('mouseup', function()
-{
-    mouseDown = false;
-    lastX = 0;
-    lastY = 0;
-}, false);
-
-function updateSurfaceTransform()
-{
-    TRANSFORM_TEMPLATE[1] = degY.value;
-    TRANSFORM_TEMPLATE[3] = degX.value;
-    TRANSFORM_TEMPLATE[5] = zoomFactor.value;
-    TRANSFORM_TEMPLATE[7] = zoomFactor.value;
-    TRANSFORM_TEMPLATE[9] = zoomFactor.value;
-    TRANSFORM_TEMPLATE[11] = posX.value;
-    TRANSFORM_TEMPLATE[13] = posY.value;
-    surface.style.webkitTransform = TRANSFORM_TEMPLATE.join('');
-}
 
 function adjust(n, delta)
 {
     return parseInt(n, 10) + delta;
 }
 
-function define() {
+function customElement(tag, prototype) {
+    function f() {
+          var el = document.createElement(tag);
+          f.prototype.__proto__ = el.__proto__;
+          el.__proto__ = f.prototype;
+          el.decorate && el.decorate();
+          return el;
+    }
 
-  function f() {
-    var el = document.createElement('div');
-    el.__proto__ = f.prototype;
-    el.decorate && el.decorate();
-    return el;
-  }
-
-  return f;
+    f.prototype = prototype;
+    return f;
 }
 
 function div(id)
