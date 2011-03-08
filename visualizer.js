@@ -182,30 +182,24 @@ var CONSTRAINTS = {
 var currentTabIndex = INITIAL_TABINDEX;
 
 var Surface = customElement('div', {
-    template_: [
-        'rotateX(', 1, 'deg) ' +
-        'rotateY(', 3, 'deg) ' +
-        'scale3d(', 5, ',', 7, ',', 9, ') ' +
-        'translate3d(', 11, 'px,', 13, 'px,0)'
-    ],
     lastX: 0,
     lastY: 0,
     degX: new ConstrainedValue(0, CONSTRAINTS.rotation),
     degY: new ConstrainedValue(0, CONSTRAINTS.rotation),
     posX: new ConstrainedValue(0, CONSTRAINTS.pos),
     posY: new ConstrainedValue(0, CONSTRAINTS.pos),
-    zoomFactor: new ConstrainedValue(1, CONSTRAINTS.zoom),
+    zoom: new ConstrainedValue(1, CONSTRAINTS.zoom),
+    transform_: [],
     mouseDown_: false,
     decorate: function()
     {
         this.id = 'surface';
-        this.template_[1] = this.degY;
-        this.template_[3] = this.degX;
-        this.template_[5] = this.zoomFactor;
-        this.template_[7] = this.zoomFactor;
-        this.template_[9] = this.zoomFactor;
-        this.template_[11] = this.posX;
-        this.template_[13] = this.posY;
+        this.transform_ = [
+            'rotateX(', this.degX, 'deg) ' +
+            'rotateY(', this.degY, 'deg) ' +
+            'scale3d(', this.zoom, ',', this.zoom, ',', this.zoom, ') ' +
+            'translate3d(', this.posX, 'px,', this.posY, 'px,0)'
+        ];
         this.updatePosition();
     },
     registerEvents: function(stage)
@@ -219,7 +213,7 @@ var Surface = customElement('div', {
     },
     updatePosition: function()
     {
-        this.style.webkitTransform = this.template_.join('');
+        this.style.webkitTransform = this.transform_.join('');
     },
     onMouseDown_: function()
     {
@@ -233,7 +227,7 @@ var Surface = customElement('div', {
     },
     onMouseWheel_: function(evt)
     {
-        this.zoomFactor.inc(evt.wheelDeltaY);
+        this.zoom.inc(evt.wheelDeltaY);
         this.updatePosition();
     },
     onMouseMove_: function(evt)
@@ -250,8 +244,8 @@ var Surface = customElement('div', {
             this.posX.inc(deltaX);
             this.posY.inc(-deltaY);
         } else {
-            this.degX.inc(deltaX);
-            this.degY.inc(deltaY);
+            this.degX.inc(deltaY);
+            this.degY.inc(deltaX);
         }
         this.updatePosition();
     }
@@ -270,9 +264,8 @@ var Stage = customElement('div', {
 
 window.addEventListener('DOMContentLoaded', function()
 {
-    var stage = new Stage();
     document.body.appendChild(tree);
-    document.body.appendChild(stage);
+    document.body.appendChild(new Stage());
 }, false);
 
 var tree = div('tree');
@@ -283,6 +276,7 @@ function adjust(n, delta)
     return parseInt(n, 10) + delta;
 }
 
+// arv r0x0r 4eva.
 function customElement(tag, prototype) {
     function f() {
           var el = document.createElement(tag);
