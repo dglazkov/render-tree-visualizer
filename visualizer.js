@@ -1,34 +1,27 @@
-function Chain(type, renderObject)
+function Chain(renderObject)
 {
-    this.type_ = type;
     this.renderObject_ = renderObject;
 
     this.box_ = surface.appendChild(div());
-    this.box_.className = this.type_.name;
+    this.box_.className = this.name;
     this.box_.id = uniqueId();
 
     this.item_ = tree.appendChild(div());
     this.item_.className = this.box_.className;
-    this.callIfExists_(this.type_.adjustItem);
+    this.adjustItem();
     this.anchor_ = document.createElement('a');
-    this.anchor_.textContent = this.type_.prettyName(this.renderObject_);
+    this.anchor_.textContent = this.prettyName(this.renderObject_);
     this.anchor_.href = '#' + this.box_.id;
     this.item_.appendChild(this.anchor_);
 
     this.depth_ = 1;
 }
 
-Chain.create = function(type) {
-    return function(renderObject) {
-        return new Chain(type, renderObject);
-    }
-}
-
 Chain.prototype = {
-    callIfExists_: function(fn)
-    {
-        fn && fn.call(this);
-    },
+    name: null,
+    prettyName: function(name) {},
+    adjustBoxStyle: function() {},
+    adjustItem: function() {},
     info_: function(className, text)
     {
         var result = document.createElement('i');
@@ -48,7 +41,7 @@ Chain.prototype = {
     setParent: function(parent)
     {
         parent.depth_ = this.depth_ + 1;
-        parent.callIfExists_(parent.type_.adjustBoxStyle);
+        parent.adjustBoxStyle();
         parent.box_.appendChild(this.box_);
         parent.item_.appendChild(this.item_);
     },
@@ -105,6 +98,57 @@ Chain.prototype = {
     }
 };
 
+function LayerChain()
+{
+    Chain.call(this);
+}
+
+LayerChain.prototype = {
+    __proto__: Chain.prototype,
+    name: 'layer',
+    prettyName: function(name)
+    {
+        return 'layer';
+    },
+    adjustBoxStyle: function()
+    {
+        this.box_.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
+        layerZOffset += this.depth_;
+    },
+    adjustItem: function()
+    {
+        this.item_.setAttribute('tabindex', currentTabIndex++);
+    }
+};
+
+function RenderChain(renderObject)
+{
+    Chain.call(this, renderObject);
+}
+
+RenderChain.prototype = {
+    __proto__: Chain.prototype,
+    name: 'render',
+    prettyName: function(name)
+    {
+        return 'Render' + name;
+    }
+};
+
+function TextChain()
+{
+    Chain.call(this);
+}
+
+TextChain.prototype = {
+    __proto__: Chain.prototype,
+    name: 'text',
+    prettyName: function(name)
+    {
+        return 'textRun';
+    }
+};
+
 var anonymous;
 var positioned = 1;
 var relative = { positioned: 2 };
@@ -136,39 +180,10 @@ ConstrainedValue.prototype = {
 
 var layerZOffset = 0;
 
-[
-    {
-        name: 'layer',
-        prettyName: function(name)
-        {
-            return 'layer';
-        },
-        adjustBoxStyle: function()
-        {
-            this.box_.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
-            layerZOffset += this.depth_;
-        },
-        adjustItem: function()
-        {
-            this.item_.setAttribute('tabindex', currentTabIndex++);
-        }
-    },
-    {
-        name: 'render',
-        prettyName: function(name)
-        {
-            return 'Render' + name;
-        }
-    },
-    {
-        name: 'text',
-        prettyName: function(name)
-        {
-            return 'textRun';
-        }
+[ LayerChain, RenderChain, TextChain ].forEach(function(root) {
+    window[root.prototype.name] = function(renderObject) {
+        return new (root)(renderObject);
     }
-].forEach(function(root) {
-    window[root.name] = Chain.create(root);
 });
 
 var INITIAL_TABINDEX = 1;
