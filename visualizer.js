@@ -1,45 +1,34 @@
 function Chain(renderObject)
 {
-    this.renderObject_ = renderObject;
-
-    this.box_ = surface.appendChild(new Box(this.name));
-    this.item_ = tree.appendChild(new (this.itemConstructor)(this.name, this.prettyName(this.renderObject_), this.box_));
-
-    this.depth_ = 1;
+    this.box_ = surface.appendChild(new (this.boxConstructor)(this.name));
+    this.item_ = tree.appendChild(new (this.itemConstructor)(this.name, this.prettyName(renderObject), this.box_));
 }
 
 Chain.prototype = {
     name: null,
     prettyName: function(name) {},
-    adjustBoxStyle: function() {},
+    get boxConstructor()
+    {
+        return Box;
+    },
     get itemConstructor()
     {
         return Item;
     },
-    updateTreeDepth_: function(depth)
-    {
-        if (!this.parent_) {
-            this.box_.style.webkitTransform = 'translateZ(' + (depth * 20) + 'px)';
-            return;
-        }
-        this.parent_.updateTreeDepth_(depth + 1);
-    },
     setParent: function(parent)
     {
-        parent.depth_ = this.depth_ + 1;
-        parent.adjustBoxStyle();
-        parent.box_.appendChild(this.box_);
+        this.box_.setParent(parent.box_);
         parent.item_.appendChild(this.item_);
     },
     at: function(x, y)
     {
-        this.box_.setLocation(x, y);
+        this.box_.at(x, y);
         this.item_.addInfo('at', 'at ' + x + ', ' + y);
         return this;
     },
     pos: function(positioning)
     {
-        this.box_.setPositioning(positioning);
+        this.box_.pos(positioning);
         return this;
     },
     tag: function(tag)
@@ -49,13 +38,13 @@ Chain.prototype = {
     },
     size: function(w, h)
     {
-        this.box_.setSize(w, h);
+        this.box_.size(w, h);
         this.item_.addInfo('size', w + 'x' + h);
         return this;
     },
     width: function(w)
     {
-        this.box_.style.width = px(w);
+        this.box_.width(w);
         this.item_.addInfo('size', 'width ' + w);
         return this;
     },
@@ -91,10 +80,9 @@ LayerChain.prototype = {
     {
         return 'layer';
     },
-    adjustBoxStyle: function()
+    get boxConstructor()
     {
-        this.box_.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
-        layerZOffset += this.depth_;
+        return LayerBox;
     },
     get itemConstructor()
     {
@@ -139,25 +127,49 @@ var Box = customElement('div', {
     {
         this.className = type;
         this.id = uniqueId();
+        this.depth_ = 1;
     },
-    setLocation: function(x, y)
+    at: function(x, y)
     {
         this.style.left = px(adjust(x, -1));
         this.style.top = px(adjust(y, -1));
     },
-    setPositioning: function(positioning)
+    pos: function(positioning)
     {
         if (positioning == positioned)
             this.style.position = 'static';
         else if (positioning == relative.positioned)
             this.style.position = 'relative';
     },
-    setSize: function(width, height)
+    size: function(width, height)
     {
         this.style.width = px(width);
         this.style.height = px(height);
+    },
+    width: function(w)
+    {
+        this.style.width = px(w);
+    },
+    setParent: function(parent)
+    {
+        parent.depth_ = this.depth_ + 1;
+        parent.addChild(this);
+    },
+    addChild: function(child)
+    {
+        this.appendChild(child);
     }
 });
+
+var LayerBox = customElement(Box, {
+    addChild: function(child)
+    {
+        this.style.webkitTransform = 'translateZ(' + (LayerBox.zOffset * 20) + 'px)';
+        LayerBox.zOffset += this.depth_;
+        Box.prototype.addChild.call(this, child);
+    }
+});
+LayerBox.zOffset = 0;
 
 var Item = customElement('div', {
     decorate: function(type, prettyName, box)
@@ -223,7 +235,6 @@ ConstrainedValue.prototype = {
     }
 };
 
-var layerZOffset = 0;
 var INITIAL_TABINDEX = 1;
 
 var CONSTRAINTS = {
@@ -360,14 +371,11 @@ function adjust(n, delta)
 function customElement(base, prototype)
 {
     function f() {
-        if (typeof base == 'string') {
-            var el = document.createElement(base);
-            f.prototype.__proto__ = el.__proto__;
-            el.__proto__ = f.prototype;
-            this.decorate && this.decorate.apply(el, arguments);
-            return el;
-        }
-        return base.apply(this, arguments);
+        var el = typeof base == 'string' ? document.createElement(base) : base.apply(this, arguments);
+        f.prototype.__proto__ = el.__proto__;
+        el.__proto__ = f.prototype;
+        this.decorate && this.decorate.apply(el, arguments);
+        return el;
     }
 
     f.prototype = prototype;
