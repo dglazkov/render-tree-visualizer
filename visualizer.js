@@ -3,8 +3,7 @@ function Chain(renderObject)
     this.renderObject_ = renderObject;
 
     this.box_ = surface.appendChild(new Box(this.name));
-    this.item_ = tree.appendChild(new Item(this.name, this.prettyName(this.renderObject_), this.box_));
-    this.adjustItem();
+    this.item_ = tree.appendChild(new (this.itemConstructor)(this.name, this.prettyName(this.renderObject_), this.box_));
 
     this.depth_ = 1;
 }
@@ -13,7 +12,10 @@ Chain.prototype = {
     name: null,
     prettyName: function(name) {},
     adjustBoxStyle: function() {},
-    adjustItem: function() {},
+    get itemConstructor()
+    {
+        return Item;
+    },
     updateTreeDepth_: function(depth)
     {
         if (!this.parent_) {
@@ -94,9 +96,9 @@ LayerChain.prototype = {
         this.box_.style.webkitTransform = 'translateZ(' + (layerZOffset * 20) + 'px)';
         layerZOffset += this.depth_;
     },
-    adjustItem: function()
+    get itemConstructor()
     {
-        this.item_.setAttribute('tabindex', currentTabIndex++);
+        return LayerItem;
     }
 };
 
@@ -170,6 +172,14 @@ var Item = customElement('div', {
     addInfo: function(type, text)
     {
         this.firstChild.appendChild(new Info(type, text));
+    }
+});
+
+var LayerItem = customElement(Item, {
+    decorate: function()
+    {
+        Item.prototype.decorate.apply(this, arguments);
+        this.setAttribute('tabindex', currentTabIndex++);
     }
 });
 
@@ -347,13 +357,17 @@ function adjust(n, delta)
 }
 
 // arv r0x0r 4eva.
-function customElement(tag, prototype) {
+function customElement(base, prototype)
+{
     function f() {
-          var el = document.createElement(tag);
-          f.prototype.__proto__ = el.__proto__;
-          el.__proto__ = f.prototype;
-          el.decorate && el.decorate.apply(el, arguments);
-          return el;
+        if (typeof base == 'string') {
+            var el = document.createElement(base);
+            f.prototype.__proto__ = el.__proto__;
+            el.__proto__ = f.prototype;
+            this.decorate && this.decorate.apply(el, arguments);
+            return el;
+        }
+        return base.apply(this, arguments);
     }
 
     f.prototype = prototype;
