@@ -71,7 +71,7 @@ Chain.prototype = {
     },
     contains: function()
     {
-        Array.prototype.slice.call(arguments, 0).forEach(function(child)
+        Array.prototype.forEach.call(arguments, function(child)
         {
             child.setParent(this);
         }, this);
