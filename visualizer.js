@@ -2,17 +2,9 @@ function Chain(renderObject)
 {
     this.renderObject_ = renderObject;
 
-    this.box_ = surface.appendChild(div());
-    this.box_.className = this.name;
-    this.box_.id = uniqueId();
-
-    this.item_ = tree.appendChild(div());
-    this.item_.className = this.box_.className;
+    this.box_ = surface.appendChild(new Box(this.name));
+    this.item_ = tree.appendChild(new Item(this.name, this.prettyName(this.renderObject_), this.box_));
     this.adjustItem();
-    this.anchor_ = document.createElement('a');
-    this.anchor_.textContent = this.prettyName(this.renderObject_);
-    this.anchor_.href = '#' + this.box_.id;
-    this.item_.appendChild(this.anchor_);
 
     this.depth_ = 1;
 }
@@ -22,14 +14,6 @@ Chain.prototype = {
     prettyName: function(name) {},
     adjustBoxStyle: function() {},
     adjustItem: function() {},
-    info_: function(className, text)
-    {
-        var result = document.createElement('i');
-        if (className)
-            result.className = className;
-        result.textContent = text;
-        this.anchor_.appendChild(result);
-    },
     updateTreeDepth_: function(depth)
     {
         if (!this.parent_) {
@@ -47,35 +31,30 @@ Chain.prototype = {
     },
     at: function(x, y)
     {
-        this.box_.style.left = px(adjust(x, -1));
-        this.box_.style.top = px(adjust(y, -1));
-        this.info_('at', 'at ' + x + ', ' + y);
+        this.box_.setLocation(x, y);
+        this.item_.addInfo('at', 'at ' + x + ', ' + y);
         return this;
     },
     pos: function(positioning)
     {
-        if (positioning == positioned)
-            this.box_.style.position = 'static';
-        else if (positioning == relative.positioned)
-            this.box_.style.position = 'relative';
+        this.box_.setPositioning(positioning);
         return this;
     },
     tag: function(tag)
     {
-        this.info_('tag', tag);
+        this.item_.addInfo('tag', tag);
         return this;
     },
     size: function(w, h)
     {
-        this.box_.style.width = px(w);
-        this.box_.style.height = px(h);
-        this.info_('size', w + 'x' + h);
+        this.box_.setSize(w, h);
+        this.item_.addInfo('size', w + 'x' + h);
         return this;
     },
     width: function(w)
     {
         this.box_.style.width = px(w);
-        this.info_('size', 'width ' + w);
+        this.item_.addInfo('size', 'width ' + w);
         return this;
     },
     property: function(name, value)
@@ -153,6 +132,62 @@ var anonymous;
 var positioned = 1;
 var relative = { positioned: 2 };
 
+var Box = customElement('div', {
+    decorate: function(type)
+    {
+        this.className = type;
+        this.id = uniqueId();
+    },
+    setLocation: function(x, y)
+    {
+        this.style.left = px(adjust(x, -1));
+        this.style.top = px(adjust(y, -1));
+    },
+    setPositioning: function(positioning)
+    {
+        if (positioning == positioned)
+            this.style.position = 'static';
+        else if (positioning == relative.positioned)
+            this.style.position = 'relative';
+    },
+    setSize: function(width, height)
+    {
+        this.style.width = px(width);
+        this.style.height = px(height);
+    }
+});
+
+var Item = customElement('div', {
+    decorate: function(type, prettyName, box)
+    {
+        this.className = type;
+
+        var anchor = document.createElement('a');
+        anchor.textContent = prettyName;
+        anchor.href = '#' + box.id;
+        this.appendChild(anchor);
+    },
+    addInfo: function(type, text)
+    {
+        this.firstChild.appendChild(new Info(type, text));
+    }
+});
+
+var Info = customElement('i', {
+    decorate: function(className, text)
+    {
+        if (className)
+            this.className = className;
+        this.textContent = text;
+    }
+});
+
+[ LayerChain, RenderChain, TextChain ].forEach(function(root) {
+    window[root.prototype.name] = function(renderObject) {
+        return new (root)(renderObject);
+    }
+});
+
 function ConstrainedValue(initialValue, constraints)
 {
     this.value_ = initialValue;
@@ -179,13 +214,6 @@ ConstrainedValue.prototype = {
 };
 
 var layerZOffset = 0;
-
-[ LayerChain, RenderChain, TextChain ].forEach(function(root) {
-    window[root.prototype.name] = function(renderObject) {
-        return new (root)(renderObject);
-    }
-});
-
 var INITIAL_TABINDEX = 1;
 
 var CONSTRAINTS = {
@@ -285,8 +313,17 @@ var Surface = customElement('div', {
     },
 });
 
+var Tree = customElement('div', {
+    decorate: function()
+    {
+        this.id = 'tree';
+    }
+});
+
+
 // FIXME: This is needed for Chain. Eliminate eventually.
 var surface = new Surface();
+var tree = new Tree();
 
 var Stage = customElement('div', {
     decorate: function()
@@ -302,7 +339,6 @@ window.addEventListener('DOMContentLoaded', function()
     document.body.appendChild(new Stage());
 }, false);
 
-var tree = div('tree');
 var currentUniqueId = 0;
 
 function adjust(n, delta)
@@ -316,20 +352,12 @@ function customElement(tag, prototype) {
           var el = document.createElement(tag);
           f.prototype.__proto__ = el.__proto__;
           el.__proto__ = f.prototype;
-          el.decorate && el.decorate();
+          el.decorate && el.decorate.apply(el, arguments);
           return el;
     }
 
     f.prototype = prototype;
     return f;
-}
-
-function div(id)
-{
-    var result = document.createElement('div');
-    if (id)
-        result.id = id;
-    return result;
 }
 
 function px(n)
