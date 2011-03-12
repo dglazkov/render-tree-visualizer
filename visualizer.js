@@ -190,6 +190,7 @@ var Surface = customElement('div', {
     posY: new ConstrainedValue(0, CONSTRAINTS.pos),
     zoom: new ConstrainedValue(1, CONSTRAINTS.zoom),
     transform_: [],
+    keyMap_: {},
     mouseDown_: false,
     decorate: function()
     {
@@ -200,9 +201,19 @@ var Surface = customElement('div', {
             'scale3d(', this.zoom, ',', this.zoom, ',', this.zoom, ') ' +
             'translate3d(', this.posX, 'px,', this.posY, 'px,0)'
         ];
+        this.keyMap_ = {
+            '37b': (function() { this.degY.inc(-10) }).bind(this),
+            '38b': (function() { this.degX.inc(10) }).bind(this),
+            '39b': (function() { this.degY.inc(10) }).bind(this),
+            '40b': (function() { this.degX.inc(-10) }).bind(this),
+            '37s': (function() { this.posX.inc(-10) }).bind(this),
+            '38s': (function() { this.posY.inc(-10) }).bind(this),
+            '39s': (function() { this.posX.inc(10) }).bind(this),
+            '40s': (function() { this.posY.inc(10) }).bind(this),
+        }
         this.updatePosition();
     },
-    registerEvents: function(stage)
+    connect: function(stage)
     {
         stage.addEventListener('mousedown', this.onMouseDown_.bind(this), false);
         stage.addEventListener('mousewheel', this.onMouseWheel_.bind(this), false);
@@ -210,6 +221,7 @@ var Surface = customElement('div', {
         window.addEventListener('mouseup', this.onMouseUp_.bind(this), false);
         // Similarly, moving a mouse out of stage should not stop rotation.
         window.addEventListener('mousemove', this.onMouseMove_.bind(this), false);
+        window.addEventListener('keydown', this.onKeyDown_.bind(this), false);
     },
     updatePosition: function()
     {
@@ -248,7 +260,14 @@ var Surface = customElement('div', {
             this.degY.inc(deltaX);
         }
         this.updatePosition();
-    }
+    },
+    onKeyDown_: function(evt)
+    {
+        if (!(this.keyMap_[evt.keyCode + (evt.shiftKey ? 's' : 'b')] || miss)())
+            this.updatePosition();
+
+        function miss() { return true; }
+    },
 });
 
 // FIXME: This is needed for Chain. Eliminate eventually.
@@ -258,7 +277,7 @@ var Stage = customElement('div', {
     decorate: function()
     {
         this.id = 'stage';
-        this.appendChild(surface).registerEvents(this);
+        this.appendChild(surface).connect(this);
     }
 });
 
