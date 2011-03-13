@@ -123,7 +123,7 @@ var positioned = 1;
 var relative = { positioned: 2 };
 
 var Box = customElement('div', {
-    decorate: function(type)
+    constructor: function(type)
     {
         this.className = type;
         this.id = uniqueId();
@@ -172,7 +172,7 @@ var LayerBox = customElement(Box, {
 LayerBox.zOffset = 0;
 
 var Item = customElement('div', {
-    decorate: function(type, prettyName, box)
+    constructor: function(type, prettyName, box)
     {
         this.className = type;
 
@@ -188,15 +188,14 @@ var Item = customElement('div', {
 });
 
 var LayerItem = customElement(Item, {
-    decorate: function()
+    constructor: function()
     {
-        Item.prototype.decorate.apply(this, arguments);
         this.setAttribute('tabindex', currentTabIndex++);
     }
 });
 
 var Info = customElement('i', {
-    decorate: function(className, text)
+    constructor: function(className, text)
     {
         if (className)
             this.className = className;
@@ -256,7 +255,7 @@ var Surface = customElement('div', {
     transform_: [],
     keyMap_: {},
     mouseDown_: false,
-    decorate: function()
+    constructor: function()
     {
         this.id = 'surface';
         this.transform_ = [
@@ -335,7 +334,7 @@ var Surface = customElement('div', {
 });
 
 var Tree = customElement('div', {
-    decorate: function()
+    constructor: function()
     {
         this.id = 'tree';
     }
@@ -347,7 +346,7 @@ var surface = new Surface();
 var tree = new Tree();
 
 var Stage = customElement('div', {
-    decorate: function()
+    constructor: function()
     {
         this.id = 'stage';
         this.appendChild(surface).connect(this);
@@ -374,7 +373,7 @@ function customElement(base, prototype)
         var el = typeof base == 'string' ? document.createElement(base) : base.apply(this, arguments);
         f.prototype.__proto__ = el.__proto__;
         el.__proto__ = f.prototype;
-        this.decorate && this.decorate.apply(el, arguments);
+        f.prototype.constructor && f.prototype.constructor.apply(el, arguments);
         return el;
     }
 
