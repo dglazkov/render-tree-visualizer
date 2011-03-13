@@ -1,29 +1,28 @@
-function Chain(renderObject)
-{
-    this.box_ = surface.appendChild(new (this.boxConstructor)(this.name));
-    this.item_ = tree.appendChild(new (this.itemConstructor)(this.name, this.prettyName(renderObject), this.box_));
-}
-
-Chain.prototype = {
+var Item = customElement('div', {
     name: null,
+    constructor: function(type)
+    {
+        this.className = this.name;
+
+        var anchor = document.createElement('a');
+        anchor.textContent = this.prettyName(type);
+        this.box_ = this.createBox_();
+        anchor.href = '#' + this.box_.id;
+        this.appendChild(anchor);
+
+        // FIXME: Somehow eliminate using "tree" directly here.
+        tree.appendChild(this);
+    },
     prettyName: function(name) {},
-    get boxConstructor()
-    {
-        return Box;
-    },
-    get itemConstructor()
-    {
-        return Item;
-    },
     setParent: function(parent)
     {
         this.box_.setParent(parent.box_);
-        parent.item_.appendChild(this.item_);
+        parent.appendChild(this);
     },
     at: function(x, y)
     {
         this.box_.at(x, y);
-        this.item_.addInfo('at', 'at ' + x + ', ' + y);
+        this.addInfo_('at', 'at ' + x + ', ' + y);
         return this;
     },
     pos: function(positioning)
@@ -33,19 +32,19 @@ Chain.prototype = {
     },
     tag: function(tag)
     {
-        this.item_.addInfo('tag', tag);
+        this.addInfo_('tag', tag);
         return this;
     },
     size: function(w, h)
     {
         this.box_.size(w, h);
-        this.item_.addInfo('size', w + 'x' + h);
+        this.addInfo_('size', w + 'x' + h);
         return this;
     },
     width: function(w)
     {
         this.box_.width(w);
-        this.item_.addInfo('size', 'width ' + w);
+        this.addInfo_('size', 'width ' + w);
         return this;
     },
     property: function(name, value)
@@ -65,58 +64,57 @@ Chain.prototype = {
             child.setParent(this);
         }, this);
         return this;
+    },
+    addInfo_: function(type, text)
+    {
+        this.firstChild.appendChild(new Info(type, text));
+    },
+    createBox_: function()
+    {
+        return new Box(this.name);
     }
-};
+});
 
-function LayerChain()
-{
-    Chain.call(this);
-}
-
-LayerChain.prototype = {
-    __proto__: Chain.prototype,
+var LayerItem = customElement(Item, {
     name: 'layer',
+    constructor: function()
+    {
+        Item.prototype.constructor.call(this);
+        this.setAttribute('tabindex', currentTabIndex++);
+    },
     prettyName: function(name)
     {
         return 'layer';
     },
-    get boxConstructor()
+    createBox_: function()
     {
-        return LayerBox;
-    },
-    get itemConstructor()
-    {
-        return LayerItem;
+        return new LayerBox(this.name);
     }
-};
+});
 
-function RenderChain(renderObject)
-{
-    Chain.call(this, renderObject);
-}
-
-RenderChain.prototype = {
-    __proto__: Chain.prototype,
+var RenderItem = customElement(Item, {
     name: 'render',
     prettyName: function(name)
     {
         return 'Render' + name;
     }
-};
+});
 
-function TextChain()
-{
-    Chain.call(this);
-}
-
-TextChain.prototype = {
-    __proto__: Chain.prototype,
+var TextItem = customElement(Item, {
     name: 'text',
     prettyName: function(name)
     {
         return 'textRun';
     }
-};
+});
+
+var Info = customElement('i', {
+    constructor: function(className, text)
+    {
+        this.className = className;
+        this.textContent = text;
+    }
+});
 
 var anonymous;
 var positioned = 1;
@@ -128,6 +126,9 @@ var Box = customElement('div', {
         this.className = type;
         this.id = uniqueId();
         this.depth_ = 1;
+
+        // FIXME: Eliminate using "surface" directly.
+        surface.appendChild(this);
     },
     at: function(x, y)
     {
@@ -171,39 +172,7 @@ var LayerBox = customElement(Box, {
 });
 LayerBox.zOffset = 0;
 
-var Item = customElement('div', {
-    constructor: function(type, prettyName, box)
-    {
-        this.className = type;
-
-        var anchor = document.createElement('a');
-        anchor.textContent = prettyName;
-        anchor.href = '#' + box.id;
-        this.appendChild(anchor);
-    },
-    addInfo: function(type, text)
-    {
-        this.firstChild.appendChild(new Info(type, text));
-    }
-});
-
-var LayerItem = customElement(Item, {
-    constructor: function()
-    {
-        this.setAttribute('tabindex', currentTabIndex++);
-    }
-});
-
-var Info = customElement('i', {
-    constructor: function(className, text)
-    {
-        if (className)
-            this.className = className;
-        this.textContent = text;
-    }
-});
-
-[ LayerChain, RenderChain, TextChain ].forEach(function(root) {
+[ LayerItem, RenderItem, TextItem ].forEach(function(root) {
     window[root.prototype.name] = function(renderObject) {
         return new (root)(renderObject);
     }
@@ -340,8 +309,6 @@ var Tree = customElement('div', {
     }
 });
 
-
-// FIXME: This is needed for Chain. Eliminate eventually.
 var surface = new Surface();
 var tree = new Tree();
 
@@ -370,10 +337,17 @@ function adjust(n, delta)
 function customElement(base, prototype)
 {
     function f() {
-        var el = typeof base == 'string' ? document.createElement(base) : base.apply(this, arguments);
+        var el;
+        if (typeof base == 'string') {
+            el = document.createElement(base);
+        } else {
+            el = base.call(this, customElement);
+        }
         f.prototype.__proto__ = el.__proto__;
         el.__proto__ = f.prototype;
-        f.prototype.constructor && f.prototype.constructor.apply(el, arguments);
+        var args;
+        if (arguments[0] !== customElement)
+            el.constructor && el.constructor.apply(el, arguments);
         return el;
     }
 
