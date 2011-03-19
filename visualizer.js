@@ -195,19 +195,17 @@ LayerBox.zOffset = 0;
 function ConstrainedValue(initialValue, constraints)
 {
     this.value_ = initialValue;
-    this.min_ = constraints[0];
-    this.max_ = constraints[1];
-    this.coefficient_ = constraints[2];
+    this.constraints_ = constraints;
 }
 
 ConstrainedValue.prototype = {
     inc: function(delta)
     {
-        var value = this.value_ + delta * this.coefficient_;
-        if (value < this.min_)
-            this.value_ = this.min_;
-        else if (value > this.max_)
-            this.value_ = this.max_;
+        var value = this.value_ + delta * this.constraints_.multiplier;
+        if (value < this.constraints_.min)
+            this.value_ = this.constraints_.min;
+        else if (value > this.constraints_.max)
+            this.value_ = this.constraints_.max;
         else
             this.value_ = value;
     },
@@ -218,9 +216,9 @@ ConstrainedValue.prototype = {
 };
 
 var CONSTRAINTS = {
-    rotation: [ -89.8, 89.8, 0.12 ],
-    zoom: [ 0.5, 10, 0.005 ],
-    pos: [ -400, 400, 1 ]
+    rotation: { min: -89.8, max: 89.8, multiplier: 0.12 },
+    zoom: { min: 0.5, max: 10, multiplier: 0.005 },
+    pos: { min: -400, max: 400, multiplier: 1 }
 }
 
 var Surface = customElement('div', {
