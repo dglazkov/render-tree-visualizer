@@ -22,12 +22,45 @@ body {
   padding: 3px 0 0 10px;
 }
 
-#tree div.layer:focus {
-  outline: none;
+#tree div.layer {
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
 }
 
-#tree i {
-  padding: 0 0 0 4px;
+#tree div.layer:focus {
+  outline: none;
+  background-color: #eee;
+}
+
+#tree span {
+  margin: 0 0 0 4px;
+}
+
+#tree span.at {
+  border-radius: 3px;
+  padding: 0 2px;
+  background-color: Orange;
+  font-family: monospace;
+  font-size: 11px;
+  color: White;
+}
+
+#tree span.size {
+  border-radius: 3px;
+  padding: 0 2px;
+  background-color: Blue;
+  font-family: monospace;
+  font-size: 11px;
+  color: White;
+}
+
+#tree span.tag {
+  border-radius: 3px;
+  padding: 0 2px;
+  background-color: Red;
+  font-family: monospace;
+  font-size: 11px;
+  color: White;
 }
 
 #stage {

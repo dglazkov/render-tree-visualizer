@@ -32,7 +32,7 @@ var Item = customElement('div', {
     at: function(x, y)
     {
         this.box_.at(x, y);
-        this.addInfo_('at', 'at ' + x + ', ' + y);
+        this.addInfo_('at', x + ',' + y);
         return this;
     },
     pos: function(positioning)
@@ -119,7 +119,7 @@ var TextItem = customElement(Item, {
     }
 });
 
-var Info = customElement('i', {
+var Info = customElement('span', {
     constructor: function(className, text)
     {
         this.className = className;
