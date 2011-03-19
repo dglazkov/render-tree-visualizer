@@ -4,10 +4,9 @@ var Item = customElement('div', {
     {
         this.className = this.name;
 
-        var anchor = document.createElement('a');
+        var anchor = document.createElement('span');
         anchor.textContent = this.prettyName(type);
         this.box_ = this.createBox_();
-        anchor.href = '#' + this.box_.id;
         this.appendChild(anchor);
         this.addEventListener('focus', this.onFocus_);
         this.addEventListener('blur', this.onBlur_);
@@ -17,11 +16,16 @@ var Item = customElement('div', {
     },
     onFocus_: function(evt)
     {
+        if (Item.lastFocused) {
+            Item.lastFocused.blur();
+            Item.lastFocused = null;
+        }
+        this.classList.add('focused');
         this.box_.classList.add('focused');
     },
     onBlur_: function(evt)
     {
-        this.box_.classList.remove('focused');
+        Item.lastFocused = new BlurAction(this);
     },
     prettyName: function(name) {},
     setParent: function(parent)
@@ -84,6 +88,20 @@ var Item = customElement('div', {
         return new Box(this.name);
     }
 });
+Item.lastFocused = null;
+
+function BlurAction(item)
+{
+    this.item_ = item;
+}
+BlurAction.prototype = {
+    blur: function()
+    {
+        this.item_.classList.remove('focused');
+        this.item_.box_.classList.remove('focused');
+    }
+}
+
 
 var LayerItem = customElement(Item, {
     name: 'layer',
@@ -135,7 +153,6 @@ var Box = customElement('div', {
     ctor: function(type)
     {
         this.className = type;
-        this.id = this.uniqueId_();
         this.depth_ = 1;
 
         // FIXME: Eliminate using "surface" directly.
@@ -179,12 +196,7 @@ var Box = customElement('div', {
     {
         return n + 'px';
     },
-    uniqueId_: function()
-    {
-        return 'b' + Box.currentUniqueId++;
-    }
 });
-Box.currentUniqueId = 1;
 
 var LayerBox = customElement(Box, {
     addChild: function(child)

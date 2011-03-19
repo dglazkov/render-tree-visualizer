@@ -27,7 +27,7 @@ body {
   border-bottom: 1px solid #ccc;
 }
 
-#tree div.layer:focus {
+#tree div.layer.focused {
   outline: none;
   background-color: #eee;
 }
