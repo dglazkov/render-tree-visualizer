@@ -34,6 +34,7 @@ body {
 
 #tree span {
   margin: 0 0 0 2px;
+  pointer-events: none;
 }
 
 #tree span.at {
