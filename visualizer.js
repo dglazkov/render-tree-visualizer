@@ -1,6 +1,6 @@
 var Item = customElement('div', {
     name: null,
-    constructor: function(type)
+    ctor: function(type)
     {
         this.className = this.name;
 
@@ -87,9 +87,9 @@ var Item = customElement('div', {
 
 var LayerItem = customElement(Item, {
     name: 'layer',
-    constructor: function()
+    ctor: function()
     {
-        Item.prototype.constructor.call(this);
+        Item.prototype.ctor.call(this);
         this.setAttribute('tabindex', LayerItem.currentTabIndex++);
     },
     prettyName: function(name)
@@ -120,7 +120,7 @@ var TextItem = customElement(Item, {
 });
 
 var Info = customElement('span', {
-    constructor: function(className, text)
+    ctor: function(className, text)
     {
         this.className = className;
         this.textContent = text;
@@ -132,7 +132,7 @@ var positioned = 1;
 var relative = { positioned: 2 };
 
 var Box = customElement('div', {
-    constructor: function(type)
+    ctor: function(type)
     {
         this.className = type;
         this.id = this.uniqueId_();
@@ -242,7 +242,7 @@ var Surface = customElement('div', {
     transform_: [],
     keyMap_: {},
     mouseDown_: false,
-    constructor: function()
+    ctor: function()
     {
         this.id = 'surface';
         this.transform_ = [
@@ -321,7 +321,7 @@ var Surface = customElement('div', {
 });
 
 var Tree = customElement('div', {
-    constructor: function()
+    ctor: function()
     {
         this.id = 'tree';
     }
@@ -331,7 +331,7 @@ var surface = new Surface();
 var tree = new Tree();
 
 var Stage = customElement('div', {
-    constructor: function()
+    ctor: function()
     {
         this.id = 'stage';
         this.appendChild(surface).connect(this);
@@ -358,7 +358,7 @@ function customElement(base, prototype)
         el.__proto__ = f.prototype;
         var args;
         if (arguments[0] !== customElement)
-            el.constructor && el.constructor.apply(el, arguments);
+            el.ctor && el.ctor.apply(el, arguments);
         return el;
     }
 
