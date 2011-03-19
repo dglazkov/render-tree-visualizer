@@ -48,6 +48,7 @@ body {
 
 #surface div {
   -webkit-transform-style: preserve-3d;
+  -webkit-transition: opacity 0.3s ease-in;
 }
 
 #surface .layer {
@@ -59,6 +60,11 @@ body {
   background-color: rgba(0, 255, 0, 0.4);
   border: 1px solid rgba(0, 255, 0, 1);
   -webkit-transform: translateZ(20px);
+}
+
+#surface div.layer:not(.focused) {
+  opacity: 0.1;
+  -webkit-transition-timing-function: ease-out;
 }
 
 #surface .layer, #surface .render {

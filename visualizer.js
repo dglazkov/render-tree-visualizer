@@ -9,9 +9,19 @@ var Item = customElement('div', {
         this.box_ = this.createBox_();
         anchor.href = '#' + this.box_.id;
         this.appendChild(anchor);
+        this.addEventListener('focus', this.onFocus_);
+        this.addEventListener('blur', this.onBlur_);
 
         // FIXME: Somehow eliminate using "tree" directly here.
         tree.appendChild(this);
+    },
+    onFocus_: function(evt)
+    {
+        this.box_.classList.add('focused');
+    },
+    onBlur_: function(evt)
+    {
+        this.box_.classList.remove('focused');
     },
     prettyName: function(name) {},
     setParent: function(parent)
