@@ -74,11 +74,6 @@ body {
   height: 100%;
 }
 
-#surface div:target {
-  background-color: rgba(255, 0, 0, 0.4);
-  border: 1px solid rgba(255, 0, 0, 1);
-}
-
 #surface div {
   -webkit-transform-style: preserve-3d;
   -webkit-transition: opacity 0.3s ease-in;
