@@ -80,7 +80,7 @@ var LayerItem = customElement(Item, {
     constructor: function()
     {
         Item.prototype.constructor.call(this);
-        this.setAttribute('tabindex', currentTabIndex++);
+        this.setAttribute('tabindex', LayerItem.currentTabIndex++);
     },
     prettyName: function(name)
     {
@@ -91,6 +91,7 @@ var LayerItem = customElement(Item, {
         return new LayerBox(this.name);
     }
 });
+LayerItem.currentTabIndex = 1;
 
 var RenderItem = customElement(Item, {
     name: 'render',
@@ -124,7 +125,7 @@ var Box = customElement('div', {
     constructor: function(type)
     {
         this.className = type;
-        this.id = uniqueId();
+        this.id = this.uniqueId_();
         this.depth_ = 1;
 
         // FIXME: Eliminate using "surface" directly.
@@ -132,8 +133,8 @@ var Box = customElement('div', {
     },
     at: function(x, y)
     {
-        this.style.left = px(adjust(x, -1));
-        this.style.top = px(adjust(y, -1));
+        this.style.left = this.px_(this.adjust_(x, -1));
+        this.style.top = this.px_(this.adjust_(y, -1));
     },
     pos: function(positioning)
     {
@@ -144,12 +145,12 @@ var Box = customElement('div', {
     },
     size: function(width, height)
     {
-        this.style.width = px(width);
-        this.style.height = px(height);
+        this.style.width = this.px_(width);
+        this.style.height = this.px_(height);
     },
     width: function(w)
     {
-        this.style.width = px(w);
+        this.style.width = this.px_(w);
     },
     setParent: function(parent)
     {
@@ -159,8 +160,21 @@ var Box = customElement('div', {
     addChild: function(child)
     {
         this.appendChild(child);
+    },
+    adjust_: function(n, delta)
+    {
+        return parseInt(n, 10) + delta;
+    },
+    px_: function(n)
+    {
+        return n + 'px';
+    },
+    uniqueId_: function()
+    {
+        return 'b' + Box.currentUniqueId++;
     }
 });
+Box.currentUniqueId = 1;
 
 var LayerBox = customElement(Box, {
     addChild: function(child)
@@ -173,8 +187,8 @@ var LayerBox = customElement(Box, {
 LayerBox.zOffset = 0;
 
 [ LayerItem, RenderItem, TextItem ].forEach(function(root) {
-    window[root.prototype.name] = function(renderObject) {
-        return new (root)(renderObject);
+    window[root.prototype.name] = function(type) {
+        return new (root)(type);
     }
 });
 
@@ -203,15 +217,11 @@ ConstrainedValue.prototype = {
     }
 };
 
-var INITIAL_TABINDEX = 1;
-
 var CONSTRAINTS = {
     rotation: [ -89.8, 89.8, 0.12 ],
     zoom: [ 0.5, 10, 0.005 ],
     pos: [ -400, 400, 1 ]
 }
-
-var currentTabIndex = INITIAL_TABINDEX;
 
 var Surface = customElement('div', {
     lastX: 0,
@@ -326,13 +336,6 @@ window.addEventListener('DOMContentLoaded', function()
     document.body.appendChild(new Stage());
 }, false);
 
-var currentUniqueId = 0;
-
-function adjust(n, delta)
-{
-    return parseInt(n, 10) + delta;
-}
-
 // arv r0x0r 4eva.
 function customElement(base, prototype)
 {
@@ -353,14 +356,4 @@ function customElement(base, prototype)
 
     f.prototype = prototype;
     return f;
-}
-
-function px(n)
-{
-    return n + 'px';
-}
-
-function uniqueId()
-{
-    return 'b' + currentUniqueId++;
 }
