@@ -216,11 +216,16 @@ LayerBox.zOffset = 0;
 
 function ConstrainedValue(initialValue, constraints)
 {
+    this.initialValue_ = initialValue;
     this.value_ = initialValue;
     this.constraints_ = constraints;
 }
 
 ConstrainedValue.prototype = {
+    reset: function()
+    {
+        this.value_ = this.initialValue_;
+    },
     inc: function(delta)
     {
         var value = this.value_ + delta * this.constraints_.multiplier;
@@ -274,6 +279,7 @@ var Surface = customElement('div', {
             'translate3d(', this.posX, 'px,', this.posY, 'px,0)'
         ];
         this.keyMap_ = {
+            '48b': this.reset_.bind(this),
             '37b': (function() { this.degY.inc(-10) }).bind(this),
             '38b': (function() { this.degX.inc(10) }).bind(this),
             '39b': (function() { this.degY.inc(10) }).bind(this),
@@ -309,6 +315,15 @@ var Surface = customElement('div', {
         this.style.webkitTransform = this.transform_.join('');
         this.planeY_.updatePosition();
         this.planeX_.updatePosition();
+    },
+    reset_: function()
+    {
+        this.degX.reset();
+        this.degY.reset();
+        this.posX.reset();
+        this.posY.reset();
+        this.zoom.reset();
+        this.updatePosition();
     },
     onMouseDown_: function()
     {
