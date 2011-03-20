@@ -1,11 +1,14 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
-import translator
+from google.appengine.api.urlfetch import fetch
+from translator import Translator
 
 class TranslatorPage(webapp.RequestHandler):
     def get(self, page):
         self.response.headers['Content-Type'] = 'text/plain'
-        self.response.out.write(page)
+        response = fetch('http://trac.webkit.org/export/HEAD/trunk/LayoutTests/' + page + '-expected.txt')
+        translator = Translator()
+        translator.translate_file(self.response.out, response.content.split('\n'))
 
 application = webapp.WSGIApplication(
                                      [('/(.*)', TranslatorPage)],

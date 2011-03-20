@@ -1,46 +1,6 @@
 import re
 from string import Template
-
-class Translator:
-    def __init__(self, matchers):
-        self.inside_quotes = False
-        self.delimiter = None
-        self._matchers = matchers
-        self.is_first_token = True
-
-    def _new_line(self):
-        self.delimiter = None
-
-    def _new_token(self):
-        if self.delimiter == None:
-            self.delimiter = ''
-        elif self.inside_quotes:
-            self.delimiter = ' '
-        else:
-            self.delimiter = '.'
-
-    def _translate_statement(self, text):
-        result = []
-        self.is_first_token = True
-        for token in text.split():
-            self._new_token()
-            for matcher in self._matchers:
-                if matcher.translate(self, token, result):
-                    break
-            self.is_first_token = False
-        return ''.join(result)
-
-    def translate_file(self, f):
-        line_pattern = re.compile('^(\s*)(.+)$')
-        last_result = None
-        for line in f:
-            self._new_line()
-            (start, indentation, statement, end) = line_pattern.split(line)
-            if last_result:
-                print last_result.output(indentation)
-            last_result = TranslatedLine(indentation, self._translate_statement(statement))
-        if last_result:
-            print last_result.output('')
+from StringIO import StringIO
 
 class DefaultMatcher():
     def translate(self, context, token, result):
@@ -160,21 +120,67 @@ class TranslatedLine():
                 brace += ';'
             else:
                 brace += ','
-        return ''.join([ self.indentation, self.text, brace ])
+        return ''.join([ self.indentation, self.text, brace, '\n' ])
+
+class Translator:
+    def __init__(self):
+        self.inside_quotes = False
+        self.delimiter = None
+        self._matchers = [
+            RenderingPrimitiveMatcher(),
+            AnonymousMatcher(),
+            ParenMatcher(),
+            TextRunMatcher(),
+            QuoteStartMatcher(),
+            QuoteEndMatcher(),
+            SizeMatcher(),
+            TextWidthMatcher(),
+            TagMatcher(),
+            PropertyMatcher(),
+            DefaultMatcher()
+        ]
+        self.is_first_token = True
+
+    def _new_line(self):
+        self.delimiter = None
+
+    def _new_token(self):
+        if self.delimiter == None:
+            self.delimiter = ''
+        elif self.inside_quotes:
+            self.delimiter = ' '
+        else:
+            self.delimiter = '.'
+
+    def _translate_statement(self, text):
+        result = []
+        self.is_first_token = True
+        for token in text.split():
+            self._new_token()
+            for matcher in self._matchers:
+                if matcher.translate(self, token, result):
+                    break
+            self.is_first_token = False
+        return ''.join(result)
+
+    def translate_file(self, out, f):
+        line_pattern = re.compile('^(\s*)(.+)$')
+        last_result = None
+        for line in f:
+            if len(line) == 0:
+                continue
+            self._new_line()
+            (start, indentation, statement, end) = line_pattern.split(line)
+            if last_result:
+                out.write(last_result.output(indentation))
+            last_result = TranslatedLine(indentation, self._translate_statement(statement))
+        if last_result:
+            out.write(last_result.output(''))
+
 
 if __name__ == '__main__':
     f = open('../sample-data/controls-styling-expected.txt')
-    translator = Translator([
-        RenderingPrimitiveMatcher(),
-        AnonymousMatcher(),
-        ParenMatcher(),
-        TextRunMatcher(),
-        QuoteStartMatcher(),
-        QuoteEndMatcher(),
-        SizeMatcher(),
-        TextWidthMatcher(),
-        TagMatcher(),
-        PropertyMatcher(),
-        DefaultMatcher()
-    ])
-    translator.translate_file(f)
+    translator = Translator()
+    out = StringIO()
+    translator.translate_file(out, f)
+    print out.getvalue()
