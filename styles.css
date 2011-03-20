@@ -85,7 +85,7 @@ body {
 }
 
 #surface .layer {
-  background-color: rgba(0, 0, 255, 0.1);
+  background-color: rgba(0, 0, 255, 0.05);
   border: 1px solid rgba(0, 0, 255, 1);
 }
 
@@ -98,7 +98,7 @@ body {
 }
 
 #surface .render {
-  background-color: rgba(0, 255, 0, 0.1);
+  background-color: rgba(0, 255, 0, 0.05);
   border: 1px solid rgba(0, 255, 0, 1);
   -webkit-transform: translateZ(20px);
 }
