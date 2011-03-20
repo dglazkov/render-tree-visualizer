@@ -77,22 +77,29 @@ body {
 
 #surface div {
   -webkit-transform-style: preserve-3d;
-  -webkit-transition: opacity 0.3s ease-in;
+  -webkit-transition: background-color 100ms ease-in;
 }
 
 #surface .layer {
-  background-color: rgba(0, 0, 255, 0.4);
+  background-color: rgba(0, 0, 255, 0.1);
   border: 1px solid rgba(0, 0, 255, 1);
 }
 
-#surface .render {
+#surface .layer.focused {
+  background-color: rgba(0, 0, 255, 0.4);
+}
+
+#surface .layer.focused .render {
   background-color: rgba(0, 255, 0, 0.4);
+}
+
+#surface .render {
+  background-color: rgba(0, 255, 0, 0.1);
   border: 1px solid rgba(0, 255, 0, 1);
   -webkit-transform: translateZ(20px);
 }
 
 #surface div.layer:not(.focused) {
-  opacity: 0.1;
   -webkit-transition-timing-function: ease-out;
 }
 
