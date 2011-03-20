@@ -270,7 +270,7 @@ var Surface = customElement('div', {
     {
         this.id = 'surface';
         this.transform_ = [
-            'scale3d(', this.zoom, ',', this.zoom, ',', this.zoom, ') ' +
+            'scale3d(', this.zoom, ',', this.zoom, ',0) ' +
             'translate3d(', this.posX, 'px,', this.posY, 'px,0)'
         ];
         this.keyMap_ = {
