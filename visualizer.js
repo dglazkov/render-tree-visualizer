@@ -156,7 +156,7 @@ var Box = customElement('div', {
         this.depth_ = 1;
 
         // FIXME: Eliminate using "surface" directly.
-        surface.appendChild(this);
+        surface.add(this);
     },
     at: function(x, y)
     {
@@ -243,6 +243,18 @@ var CONSTRAINTS = {
     pos: { min: -400, max: 400, multiplier: 1 }
 }
 
+var Plane = customElement('div', {
+    ctor: function(transform)
+    {
+        this.className = 'plane';
+        this.transform_ = transform;
+    },
+    updatePosition: function()
+    {
+        this.style.webkitTransform = this.transform_.join('');
+    }
+});
+
 var Surface = customElement('div', {
     lastX: 0,
     lastY: 0,
@@ -258,8 +270,6 @@ var Surface = customElement('div', {
     {
         this.id = 'surface';
         this.transform_ = [
-            'rotateX(', this.degX, 'deg) ' +
-            'rotateY(', this.degY, 'deg) ' +
             'scale3d(', this.zoom, ',', this.zoom, ',', this.zoom, ') ' +
             'translate3d(', this.posX, 'px,', this.posY, 'px,0)'
         ];
@@ -273,6 +283,11 @@ var Surface = customElement('div', {
             '39s': (function() { this.posX.inc(10) }).bind(this),
             '40s': (function() { this.posY.inc(10) }).bind(this),
         }
+        this.planeX_ = new Plane([ 'rotateX(', this.degX, 'deg)' ]);
+        this.planeY_ = new Plane([ 'rotateY(', this.degY, 'deg)' ]);
+        this.planeY_.appendChild(this.planeX_);
+        this.appendChild(this.planeY_);
+
         this.updatePosition();
     },
     connect: function(stage)
@@ -285,9 +300,15 @@ var Surface = customElement('div', {
         window.addEventListener('mousemove', this.onMouseMove_.bind(this), false);
         window.addEventListener('keydown', this.onKeyDown_.bind(this), false);
     },
+    add: function(o)
+    {
+        this.planeX_.appendChild(o);
+    },
     updatePosition: function()
     {
         this.style.webkitTransform = this.transform_.join('');
+        this.planeY_.updatePosition();
+        this.planeX_.updatePosition();
     },
     onMouseDown_: function()
     {

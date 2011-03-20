@@ -75,6 +75,10 @@ body {
   height: 100%;
 }
 
+#surface .plane {
+  height: 100%;
+}
+
 #surface div {
   -webkit-transform-style: preserve-3d;
   -webkit-transition: background-color 100ms ease-in;
