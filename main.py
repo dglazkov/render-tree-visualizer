@@ -11,7 +11,7 @@ class TranslatorPage(webapp.RequestHandler):
         translator.translate_file(self.response.out, response.content.split('\n'))
 
 application = webapp.WSGIApplication(
-                                     [('/(.*)', TranslatorPage)],
+                                     [('/(.*)\.js', TranslatorPage)],
                                      debug=True)
 
 def main():
