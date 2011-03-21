@@ -6,6 +6,7 @@ from translator import Translator
 class TranslatorPage(webapp.RequestHandler):
     def get(self, page):
         self.response.headers['Content-Type'] = 'text/html'
+        # FIXME: URL stringing is sooo crude.
         response = fetch('http://trac.webkit.org/export/HEAD/trunk/LayoutTests/' + page + '-expected.txt')
         translator = Translator()
         self.response.out.write('<html>\n<head>\n<link rel="stylesheet" type="text/css" href="/assets/styles.css">\n<script src="/assets/visualizer.js"></script>\n<script>')
@@ -13,7 +14,7 @@ class TranslatorPage(webapp.RequestHandler):
         self.response.out.write('</script>\n</head>\n<body></body>\n</html>\n')
 
 application = webapp.WSGIApplication(
-                                     [('/(.*)\.js', TranslatorPage)],
+                                     [('/(.*)', TranslatorPage)],
                                      debug=True)
 
 def main():
